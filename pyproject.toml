@@ -14,3 +14,17 @@ dependencies = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.tests]
+optional = true
+
+[tool.poetry.group.tests.dependencies]
+pytest = "^9.0.2"
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: unit tests (fast, mocked)",
+    "integration: integration tests (real services)",
+    "smoke: smoke/end-to-end checks after deploy, read-only checks against deployed environment; supply credentials via CI/Ansible environment variables",
+    "e2e: smoke test that run on prod in read-only mode (select from database, etc)",
+]
