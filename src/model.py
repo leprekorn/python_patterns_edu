@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, Set
+from typing import Optional, Set, Any, List
 from datetime import date
 
 
@@ -17,6 +17,32 @@ class Batch:
         self.eta = eta
         self._purchase_quantity = qty
         self._allocations: Set[OrderLine] = set()
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Batch):
+            return False
+        return other.reference == self.reference
+
+    def __qt__(self, other: Any):
+        if not isinstance(other, Batch):
+            raise ValueError("Other instance is not a Batch object!")
+        if self.eta is None:
+            return False
+        if other.eta is None:
+            return True
+        return self.eta > other.eta
+
+    def __lt__(self, other: Any):
+        if not isinstance(other, Batch):
+            raise ValueError("Other instance is not a Batch object!")
+        if self.eta is None:
+            return True
+        if other.eta is None:
+            return False
+        return self.eta < other.eta
+
+    def __hash__(self):
+        return hash(self.reference)
 
     def allocate(self, line: OrderLine):
         if self.can_allocate(line=line):
@@ -36,3 +62,9 @@ class Batch:
 
     def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
+
+
+def allocate(line: OrderLine, batches: List[Batch]) -> Batch:
+    batch = next(b for b in sorted(batches) if b.can_allocate(line))
+    batch.allocate(line)
+    return batch

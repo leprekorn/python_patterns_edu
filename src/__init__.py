@@ -1,3 +1,3 @@
-from .model import Batch, OrderLine
+from .model import Batch, OrderLine, allocate
 
-__all__ = ["Batch", "OrderLine"]
+__all__ = ["Batch", "OrderLine", "allocate"]
