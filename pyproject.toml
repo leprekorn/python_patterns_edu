@@ -21,6 +21,14 @@ optional = true
 [tool.poetry.group.tests.dependencies]
 pytest = "^9.0.2"
 
+[tool.poetry.group.linters]
+optional = true
+
+[tool.poetry.group.linters.dependencies]
+mypy = "^1.19.1"
+ruff = "^0.14.10"
+pre-commit = "^4.5.1"
+
 [tool.pytest.ini_options]
 markers = [
     "unit: unit tests (fast, mocked)",
