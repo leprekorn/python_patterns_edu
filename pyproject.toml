@@ -20,6 +20,7 @@ optional = true
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^9.0.2"
+pytest-instafail = "^0.5.0"
 
 [tool.poetry.group.linters]
 optional = true
@@ -30,9 +31,16 @@ ruff = "^0.14.10"
 pre-commit = "^4.5.1"
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "unit: unit tests (fast, mocked)",
     "integration: integration tests (real services)",
     "smoke: smoke/end-to-end checks after deploy, read-only checks against deployed environment; supply credentials via CI/Ansible environment variables",
     "e2e: smoke test that run on prod in read-only mode (select from database, etc)",
+]
+
+addopts = [
+    "-v",
+    "--showlocals",
+    "--instafail",
 ]

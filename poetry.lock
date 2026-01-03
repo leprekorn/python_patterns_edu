@@ -362,6 +362,21 @@ pygments = ">=2.7.2"
 dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "requests", "setuptools", "xmlschema"]
 
 [[package]]
+name = "pytest-instafail"
+version = "0.5.0"
+description = "pytest plugin to show failures instantly"
+optional = false
+python-versions = ">=3.7"
+groups = ["tests"]
+files = [
+    {file = "pytest-instafail-0.5.0.tar.gz", hash = "sha256:33a606f7e0c8e646dc3bfee0d5e3a4b7b78ef7c36168cfa1f3d93af7ca706c9e"},
+    {file = "pytest_instafail-0.5.0-py3-none-any.whl", hash = "sha256:6855414487e9e4bb76a118ce952c3c27d3866af15487506c4ded92eb72387819"},
+]
+
+[package.dependencies]
+pytest = ">=5"
+
+[[package]]
 name = "pyyaml"
 version = "6.0.3"
 description = "YAML parser and emitter for Python"
@@ -509,4 +524,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14"
-content-hash = "4b1d3b3b7df7b74d7df9177b3f8ccc33a57c8d140ae569663dabd1ae568396ac"
+content-hash = "e432288d5921ff2472d13e01968b38b0c1ccbe3a5a5dc3c4cb3667c5d675e9e4"
