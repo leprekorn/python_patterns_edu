@@ -1,5 +1,6 @@
 import pytest
 from src import Batch, OrderLine, allocate
+from src.exceptions import OutOfStock
 import datetime
 
 today = datetime.date.today()
@@ -67,6 +68,7 @@ def test_allocation_is_idempotent(make_batch_and_line):
     )
     batch.allocate(line=line)
     batch.allocate(line=line)
+    batch.allocate(line=line)
     assert batch.available_quantity == 18
 
 
@@ -92,3 +94,21 @@ def test_prefers_earlier_batches():
     assert fastest.available_quantity == 90
     assert medium.available_quantity == 100
     assert slower.available_quantity == 100
+
+
+@pytest.mark.unit
+def test_raises_out_of_stock_exception_if_cannot_allocate(make_batch_and_line):
+    batch: Batch
+    line: OrderLine
+    batch, line = make_batch_and_line(
+        batch_sku="SMALL-FORK",
+        batch_qty=10,
+        line_sku="SMALL-FORK",
+        line_qty=2,
+    )
+
+    allocate(line=line, batches=[batch])
+
+    extra_order = OrderLine(orderId="extra_oder", sku="SMALL-FORK", qty=10)
+    with pytest.raises(OutOfStock, match="SMALL-FORK"):
+        allocate(line=extra_order, batches=[batch])

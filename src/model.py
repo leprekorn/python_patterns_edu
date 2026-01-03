@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Set, Any, List
 from datetime import date
+from .exceptions import OutOfStock
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,9 @@ class Batch:
 
 
 def allocate(line: OrderLine, batches: List[Batch]) -> Batch:
-    batch = next(b for b in sorted(batches) if b.can_allocate(line))
-    batch.allocate(line)
+    try:
+        batch = next(b for b in sorted(batches) if b.can_allocate(line))
+        batch.allocate(line)
+    except StopIteration:
+        raise OutOfStock(f"There is no batch with sku: {line.sku} available")
     return batch
