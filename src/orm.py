@@ -1,11 +1,10 @@
-from sqlalchemy import MetaData, Table, Column, Integer, String
-from sqlalchemy.orm import registry
-from .model import OrderLine
+from sqlalchemy import Table, Column, Integer, String, Date, ForeignKey
+from sqlalchemy.orm import registry, relationship
+from .model import OrderLine, Batch
 
 
-metadata = MetaData()
-
-mapper_registry = registry(metadata=metadata)
+mapper_registry = registry()
+metadata = mapper_registry.metadata
 
 order_lines = Table(
     "order_lines",
@@ -16,6 +15,37 @@ order_lines = Table(
     Column("orderId", String(255)),
 )
 
+batches = Table(
+    "batches",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("reference", String(255)),
+    Column("sku", String(255)),
+    Column("_purchase_quantity", Integer, nullable=False),
+    Column("eta", Date, nullable=True),
+)
 
-def start_mapper():
+allocations = Table(
+    "allocations",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("orderline_id", ForeignKey("order_lines.id")),
+    Column("batch_id", ForeignKey("batches.id")),
+)
+
+
+def start_mappers() -> None:
     mapper_registry.map_imperatively(OrderLine, order_lines)
+
+    mapper_registry.map_imperatively(
+        Batch,
+        batches,
+        properties={
+            "_allocations": relationship(
+                OrderLine,
+                secondary=allocations,
+                collection_class=set,
+                backref="batches",
+            )
+        },
+    )
