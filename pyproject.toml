@@ -36,6 +36,7 @@ testpaths = ["tests"]
 markers = [
     "unit: unit tests (fast, mocked)",
     "orm: unit tests for orm",
+    "repository: unit tests for repository pattern",
     "integration: integration tests (real services)",
     "smoke: smoke/end-to-end checks after deploy, read-only checks against deployed environment; supply credentials via CI/Ansible environment variables",
     "e2e: smoke test that run on prod in read-only mode (select from database, etc)",
