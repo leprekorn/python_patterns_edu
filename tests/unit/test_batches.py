@@ -39,6 +39,26 @@ def test_cannot_allocate_if_skus_do_not_match(make_batch_and_line):
 
 
 @pytest.mark.unit
+def test_dunders(make_batch_and_line):
+    batch, line = make_batch_and_line(
+        batch_sku="ROUND-BOX",
+        batch_qty=50,
+        line_sku="ROUND-BOX",
+        line_qty=10,
+    )
+    assert batch != line
+
+    with pytest.raises(ValueError, match="Other instance is not a Batch object!"):
+        _ = batch > line
+
+    with pytest.raises(ValueError, match="Other instance is not a Batch object!"):
+        _ = batch < line
+
+    hash_dict = {"batch1": batch}
+    assert hash_dict["batch1"] == batch
+
+
+@pytest.mark.unit
 def test_can_only_deallocate_allocated_lines(make_batch_and_line):
     batch, unallocated_line = make_batch_and_line(
         batch_sku="DECORATIVE_TRINKET",

@@ -36,7 +36,7 @@ class Batch:
             return False
         return other.reference == self.reference
 
-    def __qt__(self, other: Any):
+    def __gt__(self, other: Any):
         if not isinstance(other, Batch):
             raise ValueError("Other instance is not a Batch object!")
         if self.eta is None:
