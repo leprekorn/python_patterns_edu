@@ -22,6 +22,7 @@ optional = true
 [tool.poetry.group.tests.dependencies]
 pytest = "^9.0.2"
 pytest-instafail = "^0.5.0"
+pytest-cov = "^7.0.0"
 
 [tool.poetry.group.linters]
 optional = true
@@ -46,4 +47,32 @@ addopts = [
     "-v",
     "--showlocals",
     "--instafail",
+    "--cov",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-fail-under=80"
 ]
+
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+omit = [
+    "src/**/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+precision = 2
+show_missing = true
+
+[tool.coverage.json]
+output = "cov/coverage.json"
+
+[tool.coverage.html]
+directory = "cov/html"
