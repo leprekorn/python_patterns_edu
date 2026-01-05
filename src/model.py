@@ -4,11 +4,23 @@ from datetime import date
 from .exceptions import OutOfStock
 
 
-@dataclass(frozen=True)
+def allocate(line: OrderLine, batches: List[Batch]) -> Batch:
+    try:
+        batch = next(b for b in sorted(batches) if b.can_allocate(line))
+        batch.allocate(line)
+    except StopIteration:
+        raise OutOfStock(f"There is no batch with sku: {line.sku} available")
+    return batch
+
+
+@dataclass(eq=True)
 class OrderLine:
     orderId: str
     sku: str
     qty: int
+
+    def __hash__(self):
+        return hash((self.orderId, self.sku))
 
 
 class Batch:
@@ -63,12 +75,3 @@ class Batch:
 
     def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
-
-
-def allocate(line: OrderLine, batches: List[Batch]) -> Batch:
-    try:
-        batch = next(b for b in sorted(batches) if b.can_allocate(line))
-        batch.allocate(line)
-    except StopIteration:
-        raise OutOfStock(f"There is no batch with sku: {line.sku} available")
-    return batch

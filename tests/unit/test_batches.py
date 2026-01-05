@@ -12,8 +12,6 @@ day_after_tomorrow = today + datetime.timedelta(days=2)
 @pytest.mark.parametrize("batch_qty", [20, 2], ids=["batch_qty=20", "batch_qty=2"])
 @pytest.mark.parametrize("line_qty", [20, 2], ids=["line_qty=20", "line_qty=2"])
 def test_allocating_to_a_batch_reduces_the_available_quantity(make_batch_and_line, batch_qty, line_qty):
-    batch: Batch
-    line: OrderLine
     batch, line = make_batch_and_line(
         batch_sku="SMALL-TABLE",
         batch_qty=batch_qty,
@@ -30,8 +28,6 @@ def test_allocating_to_a_batch_reduces_the_available_quantity(make_batch_and_lin
 
 @pytest.mark.unit
 def test_cannot_allocate_if_skus_do_not_match(make_batch_and_line):
-    batch: Batch
-    line: OrderLine
     batch, line = make_batch_and_line(
         batch_sku="UNCOMFORTABLE-CHAIR",
         batch_qty=100,
@@ -44,8 +40,6 @@ def test_cannot_allocate_if_skus_do_not_match(make_batch_and_line):
 
 @pytest.mark.unit
 def test_can_only_deallocate_allocated_lines(make_batch_and_line):
-    batch: Batch
-    unallocated_line: OrderLine
     batch, unallocated_line = make_batch_and_line(
         batch_sku="DECORATIVE_TRINKET",
         batch_qty=20,
@@ -58,8 +52,6 @@ def test_can_only_deallocate_allocated_lines(make_batch_and_line):
 
 @pytest.mark.unit
 def test_allocation_is_idempotent(make_batch_and_line):
-    batch: Batch
-    line: OrderLine
     batch, line = make_batch_and_line(
         batch_sku="ANGULAR-DESK",
         batch_qty=20,
@@ -98,8 +90,6 @@ def test_prefers_earlier_batches():
 
 @pytest.mark.unit
 def test_raises_out_of_stock_exception_if_cannot_allocate(make_batch_and_line):
-    batch: Batch
-    line: OrderLine
     batch, line = make_batch_and_line(
         batch_sku="SMALL-FORK",
         batch_qty=10,
