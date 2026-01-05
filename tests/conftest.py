@@ -35,11 +35,14 @@ def in_memory_db():
         poolclass=StaticPool,
     )
     metadata.create_all(engine)
-    return engine
+    yield engine
+    engine.dispose()
 
 
 @pytest.fixture
 def orm_session(in_memory_db):
     start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
+    orm_session = sessionmaker(bind=in_memory_db)()
+    yield orm_session
+    orm_session.close()
     clear_mappers()

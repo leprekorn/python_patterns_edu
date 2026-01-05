@@ -62,3 +62,20 @@ def test_repository_can_retrieve_a_batch_with_allocations(orm_session):
     assert retrieved._allocations == {  # type: ignore
         OrderLine(orderId="order1", sku="GENERIC-SOFA", qty=12),
     }
+
+
+@pytest.mark.unit
+@pytest.mark.repository
+def test_repository_can_list_batches(orm_session):
+    batch1 = Batch("batch1", "ROUND-MIRROR", 100, eta=None)
+    batch2 = Batch("batch1", "PRETTY-TABLE", 100, eta=None)
+    batch3 = Batch("batch1", "LITTLE_BOX", 100, eta=None)
+    batches = [batch1, batch2, batch3]
+    repo = SQLAlchemyRepository(orm_session)
+    for batch in batches:
+        repo.add(batch)
+    orm_session.commit()
+
+    retrieved_batches = repo.list()
+    assert len(retrieved_batches) == len(batches)
+    assert retrieved_batches == batches

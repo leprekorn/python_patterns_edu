@@ -97,3 +97,18 @@ def test_retrieving_allocations(orm_session):
     batch = orm_session.query(Batch).one()
 
     assert batch._allocations == {OrderLine("order1", "sku1", 12)}
+
+
+@pytest.mark.unit
+@pytest.mark.orm
+def test_deallocate(orm_session):
+    batch = Batch(ref="batch1", sku="sku1", qty=100, eta=None)
+    line = OrderLine(orderId="order1", sku="sku1", qty=10)
+    batch.allocate(line)
+    orm_session.add(batch)
+    orm_session.commit()
+
+    batch.deallocate(line=line)
+    orm_session.commit()
+    allocations = list(orm_session.execute(statement=text('SELECT orderline_id, batch_id FROM "allocations"')))
+    assert allocations == []  # type: ignore
