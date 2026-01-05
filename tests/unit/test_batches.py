@@ -34,8 +34,11 @@ def test_cannot_allocate_if_skus_do_not_match(make_batch_and_line):
         line_sku="EXPENSIVE-TOASTER",
         line_qty=10,
     )
+    initial_allocations = batch.allocated_quantity
 
     assert batch.can_allocate(line=line) is False
+    batch.allocate(line)
+    assert batch.allocated_quantity == initial_allocations
 
 
 @pytest.mark.unit
@@ -54,8 +57,8 @@ def test_dunders(make_batch_and_line):
     with pytest.raises(ValueError, match="Other instance is not a Batch object!"):
         _ = batch < line
 
-    hash_dict = {"batch1": batch}
-    assert hash_dict["batch1"] == batch
+    hash_dict = {batch: "batch1"}
+    assert list(hash_dict.keys())[0] == batch
 
 
 @pytest.mark.unit
@@ -89,6 +92,14 @@ def test_prefers_current_stock_batches_to_shipments():
     in_stock_batch = Batch(ref="in-stock-batch", sku="RETRO-CLOCK", qty=100, eta=None)
     shipment_batch = Batch(ref="shipment_batch", sku="RETRO-CLOCK", qty=100, eta=tomorrow)
     line = OrderLine(orderId="oref", sku="RETRO-CLOCK", qty=10)
+
+    assert in_stock_batch < shipment_batch
+    assert shipment_batch > in_stock_batch
+    assert not (in_stock_batch > shipment_batch)
+
+    gt_result = shipment_batch.__gt__(in_stock_batch)
+    assert gt_result is True
+
     allocated_batch = allocate(line=line, batches=[in_stock_batch, shipment_batch])
     assert allocated_batch is in_stock_batch
     assert shipment_batch.available_quantity == 100
