@@ -1,6 +1,7 @@
 import pytest
-from src import Batch, OrderLine, SQLAlchemyRepository
 from sqlalchemy import text
+from allocation.domain.model import Batch, OrderLine
+from allocation.adapters.repository import SQLAlchemyRepository
 
 
 def insert_order_line(orm_session) -> int:

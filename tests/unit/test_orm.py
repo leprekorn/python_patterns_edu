@@ -1,7 +1,7 @@
 import pytest
-from src import Batch, OrderLine
 from datetime import date
 from sqlalchemy import text
+from allocation.domain.model import Batch, OrderLine
 
 
 @pytest.mark.unit

@@ -1,6 +1,6 @@
 import pytest
-from src import Batch, OrderLine, allocate
-from src.exceptions import OutOfStock
+from allocation.domain.model import Batch, OrderLine, allocate
+from allocation.domain.exceptions import OutOfStock
 import datetime
 
 today = datetime.date.today()

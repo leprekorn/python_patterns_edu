@@ -1,7 +1,6 @@
 from sqlalchemy import Table, Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import registry, relationship
-from .model import OrderLine, Batch
-
+from allocation.domain.model import OrderLine, Batch
 
 mapper_registry = registry()
 metadata = mapper_registry.metadata

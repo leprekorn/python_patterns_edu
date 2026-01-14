@@ -4,5 +4,5 @@ Education by book Persival - Python patterns https://www.cosmicpython.com/
 
 # Install env:
 ```
-poetry install --all-groups --no-root
+poetry install --all-groups
 ```

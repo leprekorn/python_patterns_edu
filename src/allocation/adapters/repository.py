@@ -1,6 +1,6 @@
 from typing import Protocol, Optional, List
-from .model import Batch
 from sqlalchemy.orm import Session
+from allocation.domain.model import Batch
 
 
 class IRepository(Protocol):

@@ -1,6 +1,6 @@
 import pytest
-from src import OrderLine, Batch
-from src.orm import metadata, start_mappers
+from allocation.domain.model import OrderLine, Batch
+from allocation.adapters.orm import metadata, start_mappers
 from datetime import date
 from typing import Callable, Tuple, Optional
 
