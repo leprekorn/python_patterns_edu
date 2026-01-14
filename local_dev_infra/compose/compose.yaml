@@ -1,0 +1,22 @@
+---
+services:
+  db:
+    image: docker.io/library/postgres:18.1
+    restart: always
+    container_name: postgres
+    shm_size: 128mb
+    ports:
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - pg18_data:/var/lib/postgresql/18/docker
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    env_file:
+      - ./postgres.env
+    command: >
+      postgres
+      -c config_file=/etc/postgresql/postgresql.conf
+      -c hba_file=/etc/postgresql/pg_hba.conf
+
+volumes:
+  pg18_data:
