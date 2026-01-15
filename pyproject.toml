@@ -13,6 +13,7 @@ python = ">=3.14"
 sqlalchemy = ">=2.0.45,<3.0.0"
 fastapi = ">=0.128.0,<0.129.0"
 pydantic = "^2.12.5"
+uvicorn = "^0.40.0"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
