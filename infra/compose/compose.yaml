@@ -6,7 +6,7 @@ services:
     container_name: postgres
     shm_size: 128mb
     ports:
-      - "127.0.0.1:15432:5432"
+      - "127.0.0.1:17432:5432"
     volumes:
       - pg18_data:/var/lib/postgresql/18/docker
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf

@@ -6,3 +6,8 @@ Education by book Persival - Python patterns https://www.cosmicpython.com/
 ```
 poetry install --all-groups
 ```
+
+
+# Build process:
+```
+poetry export 

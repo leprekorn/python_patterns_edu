@@ -8,6 +8,9 @@ packages = [
     { include = "allocation", from = "src" }
 ]
 
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
+
 [tool.poetry.dependencies]
 python = ">=3.14"
 sqlalchemy = ">=2.0.45,<3.0.0"
