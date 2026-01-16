@@ -9,5 +9,18 @@ poetry install --all-groups
 
 
 # Build process:
+Export requirements.txt
 ```
-poetry export 
+poetry export -f requirements.txt --output infra/requirements.txt
+```
+
+Build container:
+```
+docker build -f infra/Dockerfile -t leprekorn/allocation:0.0.1 .
+```
+
+Test build container:
+```
+docker run --rm  leprekorn/allocation:0.0.1 python -c "from allocation.entrypoints.main import app; print('OK')"
+```
+

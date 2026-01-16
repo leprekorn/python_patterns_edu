@@ -1,0 +1,13 @@
+# .dockerignore
+cov/
+tests/
+.git/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+poetry.lock
+pyproject.toml
+ruff.toml
+README.md
+LICENSE
