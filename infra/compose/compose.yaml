@@ -1,6 +1,6 @@
 ---
 services:
-  db:
+  postgres:
     image: docker.io/library/postgres:18.1
     restart: always
     container_name: postgres
@@ -17,6 +17,17 @@ services:
       postgres
       -c config_file=/etc/postgresql/postgresql.conf
       -c hba_file=/etc/postgresql/pg_hba.conf
+
+  app:
+    image: leprekorn/allocation:0.0.1
+    restart: always
+    container_name: allocation
+    ports:
+      - "127.0.0.1:8000:80"
+    depends_on:
+      - postgres
+    env_file:
+      - ./allocation.env
 
 volumes:
   pg18_data:
