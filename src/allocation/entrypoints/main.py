@@ -5,7 +5,7 @@ from allocation import config
 from allocation.domain import model
 from allocation.adapters import orm, repository
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from allocation.entrypoints.schemas import AllocateRequest
 
@@ -25,6 +25,8 @@ def allocate_endpoint(payload: AllocateRequest):
         sku=payload.sku,
         qty=payload.qty,
     )
-
-    batchref = model.allocate(line=line, batches=batches)
-    return {"batchref": batchref}
+    try:
+        batchref = model.allocate(line=line, batches=batches)
+        return {"batchref": batchref}
+    except model.OutOfStock as e:
+        raise HTTPException(status_code=400, detail=str(e))

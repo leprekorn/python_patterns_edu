@@ -9,10 +9,12 @@ WORKDIR /app
 COPY infra/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY src/ ./src/
+# In DEV volume will be mounted, in PROD uncomment below
+# COPY src/ ./src/
 
 ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-CMD ["uvicorn", "allocation.entrypoints.main:app", "--host", "0.0.0.0", "--port", "80"]
+# In PROD remove --reload!
+CMD ["uvicorn", "allocation.entrypoints.main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]

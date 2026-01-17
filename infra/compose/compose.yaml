@@ -28,6 +28,10 @@ services:
       - postgres
     env_file:
       - ./allocation.env
+    volumes:
+      - ../../src/:/app/src/
 
 volumes:
   pg18_data:
+    driver: local
+    name: pg18_data
