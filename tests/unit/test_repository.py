@@ -37,7 +37,7 @@ def insert_allocation(orm_session, orderline_id, batch_id):
 def test_repository_can_save_a_batch(orm_session):
     batch = Batch("batch1", "RUSTY-SOAPDISH", 100, eta=None)
 
-    repo = SQLAlchemyRepository(orm_session)
+    repo = SQLAlchemyRepository(orm_session=orm_session)
     repo.add(batch)
     orm_session.commit()
 

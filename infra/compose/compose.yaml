@@ -12,7 +12,7 @@ services:
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
     env_file:
-      - ./postgres.env
+      - ../../env/postgres.env
     command: >
       postgres
       -c config_file=/etc/postgresql/postgresql.conf
@@ -27,7 +27,7 @@ services:
     depends_on:
       - postgres
     env_file:
-      - ./allocation.env
+      - ../../env/allocation.env
     volumes:
       - ../../src/:/app/src/
 
