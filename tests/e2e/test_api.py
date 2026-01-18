@@ -23,8 +23,8 @@ def random_orderid(name=""):
 
 @pytest.mark.usefixtures("restart_api")
 def test_happy_path_returns_201_and_allocated_batch(add_stock):
-    sku = random_sku()
-    othersku = random_sku("other")
+    sku = random_sku(name="first")
+    othersku = random_sku(name="other")
     earlybatch = random_batchref(name="1")
     laterbatch = random_batchref(name="2")
     otherbatch = random_batchref(name="3")
@@ -41,4 +41,4 @@ def test_happy_path_returns_201_and_allocated_batch(add_stock):
     r = requests.post(f"{url}/allocate", json=data)
 
     assert r.status_code == 201
-    assert r.json()["batchref"] == earlybatch
+    assert r.json()["batchref"]["reference"] == earlybatch

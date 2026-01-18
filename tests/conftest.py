@@ -5,7 +5,7 @@ from allocation import config
 from datetime import date
 from typing import Callable, Tuple, Optional
 
-from sqlalchemy import create_engine, exc
+from sqlalchemy import create_engine, exc, text
 from sqlalchemy.orm import sessionmaker, clear_mappers
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.engine.base import Engine
@@ -81,6 +81,12 @@ def postgres_session(postgres_db):
     clear_mappers()
 
 
+# orm_session.execute(
+#     text("INSERT INTO allocations (orderline_id, batch_id) VALUES (:olid, :bid)"),
+#     dict(olid=olid, bid=bid),
+# )
+
+
 @pytest.fixture(scope="function")
 def add_stock(postgres_session):
     batches_added = set()
@@ -89,11 +95,11 @@ def add_stock(postgres_session):
     def _add_stock(lines: list[Tuple[str, str, int, Optional[date]]]):
         for ref, sku, qty, eta in lines:
             postgres_session.execute(
-                "INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES (:ref, :sku, :qty, :eta)",
+                text("INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES (:ref, :sku, :qty, :eta)"),
                 dict(ref=ref, sku=sku, qty=qty, eta=eta),
             )
             [[batch_id]] = postgres_session.execute(
-                "SELECT id FROM batches WHERE reference=:ref AND sku=:sku",
+                text("SELECT id FROM batches WHERE reference=:ref AND sku=:sku"),
                 dict(ref=ref, sku=sku),
             )
             batches_added.add(batch_id)
@@ -104,16 +110,17 @@ def add_stock(postgres_session):
 
     for batch_id in batches_added:
         postgres_session.execute(
-            "DELETE FROM allocations WHERE batch_id=:batch_id",
+            text("DELETE FROM allocations WHERE batch_id=:batch_id"),
             dict(batch_id=batch_id),
         )
         postgres_session.execute(
-            "DELETE FROM batches WHERE id=:batch_id",
+            text("DELETE FROM batches WHERE id=:batch_id"),
             dict(batch_id=batch_id),
         )
+
     for sku in skus_added:
         postgres_session.execute(
-            "DELETE FROM order_lines WHERE sku=:sku",
+            text("DELETE FROM order_lines WHERE sku=:sku"),
             dict(sku=sku),
         )
         postgres_session.commit()
@@ -121,7 +128,7 @@ def add_stock(postgres_session):
 
 @pytest.fixture(scope="function")
 def restart_api():
-    app_file = pathlib.Path(__file__).parent.parent / "src" / "allocation" / "api" / "app.py"
+    app_file = pathlib.Path(__file__).parent.parent / "src" / "allocation" / "entrypoints" / "main.py"
     app_file.touch()
     time.sleep(0.5)
     __wait_for_webapp_to_come_up()
