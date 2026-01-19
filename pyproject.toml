@@ -50,7 +50,8 @@ markers = [
     "repository: unit tests for repository pattern",
     "integration: integration tests (real services)",
     "smoke: smoke/end-to-end checks after deploy, read-only checks against deployed environment; supply credentials via CI/Ansible environment variables",
-    "e2e: smoke test that run on prod in read-only mode (select from database, etc)",
+    "e2e: test that run on on e2e mode, using database and API endpoints",
+    "api: test REST API endpoints",
 ]
 
 addopts = [

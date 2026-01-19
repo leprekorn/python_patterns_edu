@@ -21,6 +21,8 @@ def random_orderid(name=""):
     return f"order-{name}-{random_suffix()}"
 
 
+@pytest.mark.e2e
+@pytest.mark.api
 @pytest.mark.usefixtures("restart_api")
 def test_happy_path_returns_201_and_allocated_batch(add_stock):
     sku = random_sku(name="first")
@@ -42,3 +44,15 @@ def test_happy_path_returns_201_and_allocated_batch(add_stock):
 
     assert r.status_code == 201
     assert r.json()["batchref"]["reference"] == earlybatch
+
+
+@pytest.mark.e2e
+@pytest.mark.api
+@pytest.mark.usefixtures("restart_api")
+def test_unhappy_path_returns_400_and_error_message():
+    unknown_sku, orderid = random_sku(), random_orderid()
+    data = {"orderid": orderid, "sku": unknown_sku, "qty": 20}
+    url = config.get_api_url()
+    r = requests.post(f"{url}/allocate", json=data)
+    assert r.status_code == 400
+    assert r.json()["detail"] == f"There is no batch with sku: {unknown_sku} available"
