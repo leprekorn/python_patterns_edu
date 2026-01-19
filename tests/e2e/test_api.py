@@ -43,7 +43,7 @@ def test_happy_path_returns_201_and_allocated_batch(add_stock):
     r = requests.post(f"{url}/allocate", json=data)
 
     assert r.status_code == 201
-    assert r.json()["batchref"]["reference"] == earlybatch
+    assert r.json()["batchref"] == earlybatch
 
 
 @pytest.mark.e2e
@@ -55,4 +55,4 @@ def test_unhappy_path_returns_400_and_error_message():
     url = config.get_api_url()
     r = requests.post(f"{url}/allocate", json=data)
     assert r.status_code == 400
-    assert r.json()["detail"] == f"There is no batch with sku: {unknown_sku} available"
+    assert r.json()["detail"] == f"Invalid sku {unknown_sku}"

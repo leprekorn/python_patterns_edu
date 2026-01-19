@@ -25,7 +25,7 @@ def allocate_endpoint(payload: AllocateRequest):
         qty=payload.qty,
     )
     try:
-        batchref = services.allocate(line=line, repo=repo, session=session)
+        batch = services.allocate(line=line, repo=repo, session=session)
+        return {"batchref": batch.reference}
     except (model.OutOfStock, services.InvalidSku) as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return {"batchref": batchref}
