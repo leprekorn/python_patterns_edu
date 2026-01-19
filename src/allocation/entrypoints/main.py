@@ -29,3 +29,18 @@ def allocate_endpoint(payload: AllocateRequest):
         return {"batchref": batch.reference}
     except (model.OutOfStock, services.InvalidSku) as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/batches/{batchref}")
+def get_endpoint(batchref: str):
+    session = get_session()
+    repo = repository.SQLAlchemyRepository(session)
+    batch = repo.get(reference=batchref)
+    if not batch:
+        raise HTTPException(status_code=404, detail=f"Batch {batchref} not found")
+    return {
+        "reference": batch.reference,
+        "sku": batch.sku,
+        "qty": batch._purchase_quantity,
+        "eta": batch.eta.isoformat() if batch.eta else None,
+    }

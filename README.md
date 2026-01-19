@@ -23,4 +23,3 @@ Test build container:
 ```
 docker run --rm  leprekorn/allocation:0.0.1 python -c "from allocation.entrypoints.main import app; print('OK')"
 ```
-
