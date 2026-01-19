@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from allocation import config
 from allocation.domain import model
 from allocation.adapters import orm, repository
-
+from allocation.service_layer import services
 from fastapi import FastAPI, HTTPException
 
 from allocation.entrypoints.schemas import AllocateRequest
@@ -18,7 +18,6 @@ app = FastAPI()
 def allocate_endpoint(payload: AllocateRequest):
     session = get_session()
     repo = repository.SQLAlchemyRepository(session)
-    batches = repo.list()
 
     line = model.OrderLine(
         orderId=payload.orderid,
@@ -26,7 +25,7 @@ def allocate_endpoint(payload: AllocateRequest):
         qty=payload.qty,
     )
     try:
-        batchref = model.allocate(line=line, batches=batches)
-        return {"batchref": batchref}
-    except model.OutOfStock as e:
+        batchref = services.allocate(line=line, repo=repo, session=session)
+    except (model.OutOfStock, services.InvalidSku) as e:
         raise HTTPException(status_code=400, detail=str(e))
+    return {"batchref": batchref}

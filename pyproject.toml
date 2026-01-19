@@ -52,6 +52,7 @@ markers = [
     "smoke: smoke/end-to-end checks after deploy, read-only checks against deployed environment; supply credentials via CI/Ansible environment variables",
     "e2e: test that run on on e2e mode, using database and API endpoints",
     "api: test REST API endpoints",
+    "service: test for service layer",
 ]
 
 addopts = [

@@ -81,12 +81,6 @@ def postgres_session(postgres_db):
     clear_mappers()
 
 
-# orm_session.execute(
-#     text("INSERT INTO allocations (orderline_id, batch_id) VALUES (:olid, :bid)"),
-#     dict(olid=olid, bid=bid),
-# )
-
-
 @pytest.fixture(scope="function")
 def add_stock(postgres_session):
     batches_added = set()
