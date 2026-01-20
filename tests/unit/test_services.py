@@ -18,6 +18,9 @@ class FakeRepository(IRepository):
     def list(self):
         return list(self._batches)
 
+    def get_order_line(self, orderId: str):
+        raise NotImplementedError(f"should get order line by {orderId}")
+
 
 class FakeSession(services.ISession):
     committed = False

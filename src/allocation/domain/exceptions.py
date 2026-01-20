@@ -14,3 +14,21 @@ class InvalidSku(AllocationError):
     """Raised when invalid SKU passed."""
 
     pass
+
+
+class InvalidBatchReference(AllocationError):
+    """Raised when invalid batch reference passed."""
+
+    pass
+
+
+class InvalidOrderLine(AllocationError):
+    """Raised when invalid order line passed."""
+
+    pass
+
+
+class UnallocatedLine(AllocationError):
+    """Raised when trying to deallocate a line that was not allocated."""
+
+    pass

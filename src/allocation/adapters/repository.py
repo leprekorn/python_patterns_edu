@@ -1,6 +1,6 @@
 from typing import Protocol, Optional, List
 from sqlalchemy.orm import Session
-from allocation.domain.model import Batch
+from allocation.domain.model import Batch, OrderLine
 
 
 class IRepository(Protocol):
@@ -17,6 +17,9 @@ class IRepository(Protocol):
     def list(self) -> List[Batch]:
         raise NotImplementedError
 
+    def get_order_line(self, orderId: str) -> Optional[OrderLine]:
+        raise NotImplementedError
+
 
 class SQLAlchemyRepository(IRepository):
     def __init__(self, orm_session: Session):
@@ -30,3 +33,6 @@ class SQLAlchemyRepository(IRepository):
 
     def list(self) -> List[Batch]:
         return self.orm_session.query(Batch).all()
+
+    def get_order_line(self, orderId: str) -> Optional[OrderLine]:
+        return self.orm_session.query(OrderLine).filter_by(orderId=orderId).first()
