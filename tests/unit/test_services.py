@@ -1,8 +1,9 @@
 import pytest
 from allocation.adapters.repository import IRepository
 from allocation.domain import model
+from allocation.domain.exceptions import UnallocatedLine, InvalidBatchReference
 from allocation.service_layer import services
-from typing import List
+from typing import List, Optional
 
 
 class FakeRepository(IRepository):
@@ -12,8 +13,12 @@ class FakeRepository(IRepository):
     def add(self, batch: model.Batch):
         self._batches.add(batch)
 
-    def get(self, reference: str):
-        return next(b for b in self._batches if b.reference == reference)
+    def get(self, reference: str) -> Optional[model.Batch]:
+        try:
+            batch = next(b for b in self._batches if b.reference == reference)
+        except StopIteration:
+            return None
+        return batch
 
     def list(self):
         return list(self._batches)
@@ -74,3 +79,25 @@ def test_deallocate_returns_batch_reference():
     unallocation_result = services.deallocate(batchref=batch.reference, orderId=line.orderId, repo=repo, session=FakeSession())
     assert unallocation_result == batch
     assert batch.available_quantity == 100
+
+
+@pytest.mark.unit
+@pytest.mark.service
+def test_deallocate_non_allocated_line_raises_exception():
+    line = model.OrderLine("o30", "FANCY-TABLE", 5)
+    batch = model.Batch("b70", "FANCY-TABLE", 50, eta=None)
+    repo = FakeRepository([batch])
+
+    with pytest.raises(UnallocatedLine, match=f"Order line {line.orderId} is not allocated to batch {batch.reference}"):
+        services.deallocate(batchref=batch.reference, orderId=line.orderId, repo=repo, session=FakeSession())
+
+
+@pytest.mark.unit
+@pytest.mark.service
+def test_deallocate_for_absent_batch_raises_exception():
+    line = model.OrderLine("o30", "COZY-SOFA", 15)
+    batch = model.Batch("b70", "COZY-SOFA", 50, eta=None)
+    repo = FakeRepository([])
+
+    with pytest.raises(InvalidBatchReference, match=f"Invalid batch reference {batch.reference}"):
+        services.deallocate(batchref=batch.reference, orderId=line.orderId, repo=repo, session=FakeSession())
