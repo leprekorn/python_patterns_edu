@@ -67,6 +67,12 @@ class Batch:
     def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
 
+    def allocated_line(self, orderId: str) -> Optional[OrderLine]:
+        for line in self._allocations:
+            if line.orderId == orderId:
+                return line
+        return None
+
 
 def allocate(line: OrderLine, batches: List[Batch]) -> Batch:
     try:

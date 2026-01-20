@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker
 
 from allocation import config
 from allocation.domain.model import OrderLine
-from allocation.domain.exceptions import OutOfStock, InvalidBatchReference, InvalidOrderLine, UnallocatedLine
+from allocation.domain.exceptions import OutOfStock, InvalidBatchReference, UnallocatedLine
 from allocation.adapters import orm, repository
 from allocation.service_layer import services
 from fastapi import FastAPI, HTTPException
@@ -37,16 +37,14 @@ def deallocate_endpoint(payload: DeallocateRequest):
     session = get_session()
     repo = repository.SQLAlchemyRepository(session)
     try:
-        batch_reference = services.deallocate(
+        batch = services.deallocate(
             batchref=payload.batchref,
             orderId=payload.orderid,
             repo=repo,
             session=session,
         )
-        return {"batchref": batch_reference}
+        return {"batchref": batch.reference}
     except InvalidBatchReference as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except InvalidOrderLine as e:
         raise HTTPException(status_code=404, detail=str(e))
     except UnallocatedLine as e:
         raise HTTPException(status_code=400, detail=str(e))

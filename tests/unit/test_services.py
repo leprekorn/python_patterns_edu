@@ -18,9 +18,6 @@ class FakeRepository(IRepository):
     def list(self):
         return list(self._batches)
 
-    def get_order_line(self, orderId: str):
-        raise NotImplementedError(f"should get order line by {orderId}")
-
 
 class FakeSession(services.ISession):
     committed = False
@@ -61,3 +58,19 @@ def test_commits():
 
     services.allocate(line=line, repo=repo, session=session)
     assert session.committed is True
+
+
+@pytest.mark.unit
+@pytest.mark.service
+def test_deallocate_returns_batch_reference():
+    line = model.OrderLine("o20", "CRAZY-CHAIR", 10)
+    batch = model.Batch("b50", "CRAZY-CHAIR", 100, eta=None)
+    repo = FakeRepository([batch])
+
+    result = services.allocate(line=line, repo=repo, session=FakeSession())
+    assert result == batch
+    assert batch.available_quantity == 90
+
+    unallocation_result = services.deallocate(batchref=batch.reference, orderId=line.orderId, repo=repo, session=FakeSession())
+    assert unallocation_result == batch
+    assert batch.available_quantity == 100

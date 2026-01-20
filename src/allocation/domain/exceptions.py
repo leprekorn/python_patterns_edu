@@ -4,6 +4,12 @@ class AllocationError(Exception):
     pass
 
 
+class DeallocationError(Exception):
+    """Base exception for all deallocation-related errors."""
+
+    pass
+
+
 class OutOfStock(AllocationError):
     """Raised when no batch with matching SKU has available quantity."""
 
@@ -22,13 +28,7 @@ class InvalidBatchReference(AllocationError):
     pass
 
 
-class InvalidOrderLine(AllocationError):
-    """Raised when invalid order line passed."""
-
-    pass
-
-
-class UnallocatedLine(AllocationError):
+class UnallocatedLine(DeallocationError):
     """Raised when trying to deallocate a line that was not allocated."""
 
     pass
