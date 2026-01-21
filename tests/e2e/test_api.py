@@ -49,7 +49,7 @@ def test_happy_path_post_returns_201_and_allocated_batch(add_stock):
 @pytest.mark.e2e
 @pytest.mark.api
 @pytest.mark.usefixtures("restart_api")
-def test_unhappy_path_post_returns_400_and_error_message():
+def test_unhappy_path_post_allocate_returns_400_and_error_message():
     unknown_sku, orderid = random_sku(), random_orderid()
     data = {"orderid": orderid, "sku": unknown_sku, "qty": 20}
     url = config.get_api_url()
@@ -84,3 +84,60 @@ def test_unhappy_path_get_returns_400_for_abcent_batch():
     r = requests.get(f"{url}/batches/{batch}")
     assert r.status_code == 404
     assert r.json()["detail"] == f"Batch {batch} not found"
+
+
+@pytest.mark.e2e
+@pytest.mark.api
+@pytest.mark.usefixtures("restart_api")
+def test_happy_path_post_returns_200_and_deallocated_batch(add_stock):
+    sku = random_sku(name="cool_table")
+    batch = random_batchref(name="15")
+    add_stock(
+        [
+            (batch, sku, 100, "2026-01-21"),
+        ]
+    )
+    allocate_data = {"orderid": random_orderid(), "sku": sku, "qty": 3}
+    url = config.get_api_url()
+
+    r = requests.post(f"{url}/allocate", json=allocate_data)
+
+    assert r.status_code == 201
+    assert r.json()["batchref"] == batch
+
+    deallocate_data = {"batchref": batch, "orderid": allocate_data["orderid"]}
+    r = requests.post(f"{url}/deallocate", json=deallocate_data)
+    assert r.status_code == 200
+    assert r.json()["batchref"] == batch
+
+
+@pytest.mark.e2e
+@pytest.mark.api
+@pytest.mark.usefixtures("restart_api")
+def test_unhappy_path_post_deallocate_for_unallocated_pair_returns_400_and_error_message(add_stock):
+    sku = random_sku(name="cool_table")
+    order_id = random_orderid(name="dealloc-test")
+    batchref = random_batchref(name="15")
+    add_stock(
+        [
+            (batchref, sku, 100, "2026-01-21"),
+        ]
+    )
+    url = config.get_api_url()
+    deallocate_data = {"batchref": batchref, "orderid": order_id}
+    r = requests.post(f"{url}/deallocate", json=deallocate_data)
+    assert r.status_code == 400
+    assert r.json()["detail"] == f"Order line {order_id} is not allocated to batch {batchref}"
+
+
+@pytest.mark.e2e
+@pytest.mark.api
+@pytest.mark.usefixtures("restart_api")
+def test_unhappy_path_post_deallocate_for_abcent_batch_returns_404_and_error_message():
+    batchref = random_batchref(name="abcent")
+    orderid = random_orderid()
+    deallocate_data = {"batchref": batchref, "orderid": orderid}
+    url = config.get_api_url()
+    r = requests.post(f"{url}/deallocate", json=deallocate_data)
+    assert r.status_code == 404
+    assert r.json()["detail"] == f"Invalid batch reference {batchref}"
