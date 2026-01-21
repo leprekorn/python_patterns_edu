@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 
 import time
 import pathlib
-import requests
+import httpx
 
 
 @pytest.fixture(scope="function")
@@ -135,7 +135,7 @@ def __wait_for_webapp_to_come_up():
     url = config.get_api_url()
     while time.time() < deadline:
         try:
-            return requests.get(url)
+            return httpx.get(url)
         except ConnectionError:
             time.sleep(0.5)
     pytest.fail("API never came up")
@@ -143,5 +143,8 @@ def __wait_for_webapp_to_come_up():
 
 @pytest.fixture(scope="function")
 def fastapi_test_client():
+    clear_mappers()
+    start_mappers()
     client = TestClient(app)
     yield client
+    clear_mappers()
