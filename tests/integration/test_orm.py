@@ -4,7 +4,7 @@ from sqlalchemy import text
 from allocation.domain.model import Batch, OrderLine
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.orm
 def test_orderline_mapper_can_load_lines(orm_session):
     insert_query = """
@@ -22,7 +22,7 @@ def test_orderline_mapper_can_load_lines(orm_session):
     assert orm_session.query(OrderLine).all() == expected
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.orm
 def test_orderline_mapper_can_save_lines(orm_session):
     new_line = OrderLine("order1", "DECORATIVE-WIDGET", 12)
@@ -33,7 +33,7 @@ def test_orderline_mapper_can_save_lines(orm_session):
     assert rows == [("order1", "DECORATIVE-WIDGET", 12)]
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.orm
 def test_retrieving_batches(orm_session):
     insert_batch1 = "INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES ('batch1', 'sku1', 100, null)"
@@ -48,7 +48,7 @@ def test_retrieving_batches(orm_session):
     assert orm_session.query(Batch).all() == expected
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.orm
 def test_saving_batches(orm_session):
     batch = Batch(ref="batch1", sku="sku1", qty=100, eta=None)
@@ -58,7 +58,7 @@ def test_saving_batches(orm_session):
     assert list(rows) == [("batch1", "sku1", 100, None)]
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.orm
 def test_saving_allocations(orm_session):
     batch = Batch(ref="batch1", sku="sku1", qty=100, eta=None)
@@ -70,7 +70,7 @@ def test_saving_allocations(orm_session):
     assert rows_id == [(line.id, batch.id)]  # type: ignore
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.orm
 def test_retrieving_allocations(orm_session):
     orm_session.execute(
@@ -99,7 +99,7 @@ def test_retrieving_allocations(orm_session):
     assert batch._allocations == {OrderLine("order1", "sku1", 12)}
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.orm
 def test_deallocate(orm_session):
     batch = Batch(ref="batch1", sku="sku1", qty=100, eta=None)

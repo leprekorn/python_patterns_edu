@@ -24,7 +24,7 @@ def random_orderid(name=""):
 @pytest.mark.e2e
 @pytest.mark.api
 @pytest.mark.usefixtures("restart_api")
-def test_happy_path_post_returns_201_and_allocated_batch(add_stock):
+def test_happy_path_post_returns_201_and_allocated_batch(add_stock, fastapi_test_client):
     sku = random_sku(name="first")
     othersku = random_sku(name="other")
     earlybatch = random_batchref(name="1")
@@ -39,8 +39,8 @@ def test_happy_path_post_returns_201_and_allocated_batch(add_stock):
     )
     data = {"orderid": random_orderid(), "sku": sku, "qty": 3}
     url = config.get_api_url()
-
-    r = requests.post(f"{url}/allocate", json=data)
+    client = fastapi_test_client
+    r = client.post(f"{url}/allocate", json=data)
 
     assert r.status_code == 201
     assert r.json()["batchref"] == earlybatch

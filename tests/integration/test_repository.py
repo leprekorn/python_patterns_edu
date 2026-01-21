@@ -32,7 +32,7 @@ def insert_allocation(orm_session, orderline_id, batch_id):
     )
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.repository
 def test_repository_can_save_a_batch(orm_session):
     batch = Batch("batch1", "RUSTY-SOAPDISH", 100, eta=None)
@@ -45,7 +45,7 @@ def test_repository_can_save_a_batch(orm_session):
     assert list(rows) == [("batch1", "RUSTY-SOAPDISH", 100, None)]
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.repository
 def test_repository_can_retrieve_a_batch_with_allocations(orm_session):
     orderline_id = insert_order_line(orm_session)
@@ -65,7 +65,7 @@ def test_repository_can_retrieve_a_batch_with_allocations(orm_session):
     }
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 @pytest.mark.repository
 def test_repository_can_list_batches(orm_session):
     batch1 = Batch("batch1", "ROUND-MIRROR", 100, eta=None)

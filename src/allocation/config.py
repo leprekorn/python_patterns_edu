@@ -10,9 +10,9 @@ def get_db_uri():
     user = os.environ.get("DB_USER", "allocation")
     db_name = os.environ.get("DB_NAME", "allocation")
     if not password:
-        pg_env_file = pathlib.Path(__file__).parent.parent.parent / "env" / "allocation.env"
+        pg_env_file = pathlib.Path(__file__).parent.parent.parent / "env" / "postgres.env"
         dotenv.load_dotenv(dotenv_path=pg_env_file)
-        password = os.environ.get("DB_PASSWORD")
+        password = os.environ.get("POSTGRES_PASSWORD")
     return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
 
 

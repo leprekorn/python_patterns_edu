@@ -33,6 +33,7 @@ pytest-instafail = "^0.5.0"
 pytest-cov = "^7.0.0"
 requests = "^2.32.5"
 types-requests = "^2.32.4.20260107"
+httpx = "^0.28.1"
 
 [tool.poetry.group.linters]
 optional = true

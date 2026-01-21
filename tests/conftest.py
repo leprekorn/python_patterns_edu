@@ -2,6 +2,7 @@ import pytest
 from allocation.domain.model import OrderLine, Batch
 from allocation.adapters.orm import metadata, start_mappers
 from allocation import config
+from allocation.entrypoints.main import app
 from datetime import date
 from typing import Callable, Tuple, Optional
 
@@ -9,7 +10,7 @@ from sqlalchemy import create_engine, exc, text
 from sqlalchemy.orm import sessionmaker, clear_mappers
 from sqlalchemy.pool import StaticPool
 from sqlalchemy.engine.base import Engine
-
+from fastapi.testclient import TestClient
 
 import time
 import pathlib
@@ -76,6 +77,7 @@ def postgres_db() -> Engine:
 
 @pytest.fixture(scope="function")
 def postgres_session(postgres_db):
+    clear_mappers()
     start_mappers()
     yield sessionmaker(bind=postgres_db)()
     clear_mappers()
@@ -137,3 +139,9 @@ def __wait_for_webapp_to_come_up():
         except ConnectionError:
             time.sleep(0.5)
     pytest.fail("API never came up")
+
+
+@pytest.fixture(scope="function")
+def fastapi_test_client():
+    client = TestClient(app)
+    yield client
