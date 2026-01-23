@@ -7,7 +7,8 @@ from allocation.adapters import orm, repository
 from allocation.service_layer import services
 from fastapi import FastAPI, HTTPException
 
-from allocation.entrypoints.schemas import AllocateRequest, DeallocateRequest
+from allocation.entrypoints.schemas import AllocateRequest, DeallocateRequest, AddBatchRequest
+from datetime import datetime
 
 orm.start_mappers()
 get_session = sessionmaker(bind=create_engine(url=config.get_db_uri()))
@@ -26,6 +27,17 @@ def allocate_endpoint(payload: AllocateRequest):
         return {"batchref": batch.reference}
     except (OutOfStock, services.InvalidSku) as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/batches/", status_code=201)
+def add_batch(payload: AddBatchRequest):
+    session = get_session()
+    repo = repository.SQLAlchemyRepository(session)
+    reference = payload.reference
+    sku = payload.sku
+    qty = payload.qty
+    eta = None if payload.eta is None else datetime.fromisoformat(payload.eta).date()
+    services.add_batch(reference=reference, sku=sku, qty=qty, eta=eta, repo=repo, session=session)
 
 
 @app.post("/deallocate", status_code=200)

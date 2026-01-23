@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class AllocateRequest(BaseModel):
@@ -10,3 +11,10 @@ class AllocateRequest(BaseModel):
 class DeallocateRequest(BaseModel):
     batchref: str
     orderid: str
+
+
+class AddBatchRequest(BaseModel):
+    reference: str
+    sku: str
+    qty: int
+    eta: Optional[str] = None
