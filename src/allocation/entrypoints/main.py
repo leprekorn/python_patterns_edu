@@ -7,7 +7,7 @@ from allocation.adapters import orm, repository
 from allocation.service_layer import services
 from fastapi import FastAPI, HTTPException
 
-from allocation.entrypoints.schemas import AllocateRequest, DeallocateRequest, AddBatchRequest, DeleteBatchRequest
+from allocation.entrypoints.schemas import AllocateRequest, DeallocateRequest, AddBatchRequest
 from datetime import datetime
 
 orm.start_mappers()
@@ -40,12 +40,14 @@ def add_batch(payload: AddBatchRequest):
     services.add_batch(reference=reference, sku=sku, qty=qty, eta=eta, repo=repo, session=session)
 
 
-@app.delete("/batches/", status_code=204)
-def delete_batch(payload: DeleteBatchRequest):
+@app.delete("/batches/{batchref}", status_code=204)
+def delete_batch(batchref: str):
     session = get_session()
     repo = repository.SQLAlchemyRepository(session)
-    reference = payload.reference
-    services.delete_batch(reference=reference, repo=repo, session=session)
+    try:
+        services.delete_batch(reference=batchref, repo=repo, session=session)
+    except InvalidBatchReference as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @app.post("/deallocate", status_code=200)

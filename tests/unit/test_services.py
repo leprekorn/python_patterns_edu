@@ -100,12 +100,12 @@ def test_delete_batch(make_fake_repo_session):
     }
     existing = repo.list()
     assert existing == []
-    delete_unexisting = services.delete_batch(
-        reference=batch_args["reference"],
-        repo=repo,
-        session=session,
-    )
-    assert delete_unexisting is None
+    with pytest.raises(InvalidBatchReference, match=f"Invalid batch reference {batch_args['reference']}"):
+        services.delete_batch(
+            reference=batch_args["reference"],
+            repo=repo,
+            session=session,
+        )
     assert session.committed is False
 
     services.add_batch(

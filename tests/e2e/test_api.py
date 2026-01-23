@@ -56,6 +56,10 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
     assert deallocated_request.status_code == 200
     assert deallocated_request.json()["batchref"] == earlybatch
 
+    for batch in (earlybatch, laterbatch, otherbatch):
+        delete_response = fastapi_test_client.delete(f"{url}/batches/{batch}")
+        assert delete_response.status_code == 204
+
 
 @pytest.mark.e2e
 @pytest.mark.api
@@ -97,9 +101,15 @@ def test_unhappy_path_post_deallocate_for_unallocated_pair_returns_400_and_error
         "qty": 100,
         "eta": "2026-01-21",
     }
+    delete_abcent = fastapi_test_client.delete(f"{url}/batches/{batchref}")
+    assert delete_abcent.status_code == 404
+
     r = fastapi_test_client.post(f"{url}/batches/", json=data)
     assert r.status_code == 201
     deallocate_data = {"batchref": batchref, "orderid": order_id}
     r = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
     assert r.status_code == 400
     assert r.json()["detail"] == f"Order line {order_id} is not allocated to batch {batchref}"
+
+    delete = fastapi_test_client.delete(f"{url}/batches/{batchref}")
+    assert delete.status_code == 204

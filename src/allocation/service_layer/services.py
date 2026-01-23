@@ -62,6 +62,7 @@ def delete_batch(
     session: ISession,
 ) -> None:
     batch = repo.get(reference=reference)
-    if batch:
-        repo.delete(batch.reference)
-        session.commit()
+    if not batch:
+        raise InvalidBatchReference(f"Invalid batch reference {reference}")
+    repo.delete(batch.reference)
+    session.commit()
