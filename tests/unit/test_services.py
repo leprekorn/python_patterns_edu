@@ -95,3 +95,24 @@ def test_deallocate_for_absent_batch_raises_exception():
 
     with pytest.raises(InvalidBatchReference, match=f"Invalid batch reference {batch.reference}"):
         services.deallocate(batchref=batch.reference, orderId="o30", repo=repo, session=FakeSession())
+
+
+def test_add_batch():
+    repo = FakeRepository([])
+    session = FakeSession()
+
+    services.add_batch(
+        reference="b1",
+        sku="ADORABLE-SETTEE",
+        qty=12,
+        eta=None,
+        repo=repo,
+        session=session,
+    )
+
+    added = repo.get("b1")
+    assert added is not None
+    assert added.reference == "b1"
+    assert added.sku == "ADORABLE-SETTEE"
+    assert added._purchase_quantity == 12
+    assert session.committed is True

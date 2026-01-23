@@ -1,7 +1,8 @@
 from allocation.domain import model
 from allocation.domain.exceptions import InvalidSku, InvalidBatchReference, UnallocatedLine
 from allocation.adapters.repository import IRepository
-from typing import List, Protocol
+from typing import List, Protocol, Optional
+from datetime import date
 
 
 class ISession(Protocol):
@@ -37,5 +38,19 @@ def deallocate(batchref: str, orderId: str, repo: IRepository, session: ISession
         raise UnallocatedLine(f"Order line {orderId} is not allocated to batch {batchref}")
 
     batch.deallocate(line=line)
+    session.commit()
+    return batch
+
+
+def add_batch(
+    reference: str,
+    sku: str,
+    qty: int,
+    eta: Optional[date],
+    repo: IRepository,
+    session: ISession,
+) -> model.Batch:
+    batch = model.Batch(ref=reference, sku=sku, qty=qty, eta=eta)
+    repo.add(batch)
     session.commit()
     return batch
