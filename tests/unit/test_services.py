@@ -92,22 +92,34 @@ def test_add_batch(make_fake_repo_session):
 @pytest.mark.service
 def test_delete_batch(make_fake_repo_session):
     repo, session = make_fake_repo_session
+    batch_args = {
+        "reference": "b1",
+        "sku": "ADORABLE-SETTEE",
+        "qty": 12,
+        "eta": None,
+    }
+    existing = repo.list()
+    assert existing == []
+    delete_unexisting = services.delete_batch(
+        reference=batch_args["reference"],
+        repo=repo,
+        session=session,
+    )
+    assert delete_unexisting is None
+    assert session.committed is False
 
     services.add_batch(
-        reference="b1",
-        sku="ADORABLE-SETTEE",
-        qty=12,
-        eta=None,
+        **batch_args,
         repo=repo,
         session=session,
     )
 
     services.delete_batch(
-        reference="b1",
+        reference=batch_args["reference"],
         repo=repo,
         session=session,
     )
-    deleted = repo.get(reference="b1")
+    deleted = repo.get(reference=batch_args["reference"])
     assert deleted is None
     assert session.committed is True
     existing = repo.list()
