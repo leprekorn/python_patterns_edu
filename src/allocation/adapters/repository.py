@@ -17,6 +17,9 @@ class IRepository(Protocol):
     def list(self) -> List[Batch]:
         raise NotImplementedError
 
+    def delete(self, reference: str):
+        raise NotImplementedError
+
 
 class SQLAlchemyRepository(IRepository):
     def __init__(self, orm_session: Session):
@@ -30,3 +33,6 @@ class SQLAlchemyRepository(IRepository):
 
     def list(self) -> List[Batch]:
         return self.orm_session.query(Batch).all()
+
+    def delete(self, reference: str):
+        return self.orm_session.query(Batch).filter_by(reference=reference).delete()

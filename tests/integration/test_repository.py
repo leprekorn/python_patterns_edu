@@ -4,6 +4,8 @@ from allocation.domain.model import Batch, OrderLine
 from allocation.adapters.repository import SQLAlchemyRepository
 
 
+@pytest.mark.integration
+@pytest.mark.repository
 def insert_order_line(orm_session) -> int:
     orm_session.execute(statement=text('INSERT INTO order_lines (orderid, sku, qty) VALUES ("order1", "GENERIC-SOFA", 12)'))
     [[orderline_id]] = orm_session.execute(
@@ -13,6 +15,8 @@ def insert_order_line(orm_session) -> int:
     return orderline_id
 
 
+@pytest.mark.integration
+@pytest.mark.repository
 def insert_batch(orm_session, batch_id) -> int:
     orm_session.execute(
         text('INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES (:batch_id, "GENERIC-SOFA", 100, null)'),
@@ -25,6 +29,8 @@ def insert_batch(orm_session, batch_id) -> int:
     return batch_id
 
 
+@pytest.mark.integration
+@pytest.mark.repository
 def insert_allocation(orm_session, orderline_id, batch_id):
     orm_session.execute(
         text("INSERT INTO allocations (orderline_id, batch_id) VALUES (:orderline_id, :batch_id)"),
@@ -43,6 +49,20 @@ def test_repository_can_save_a_batch(orm_session):
 
     rows = orm_session.execute(statement=text('SELECT reference, sku, _purchase_quantity, eta FROM "batches"'))
     assert list(rows) == [("batch1", "RUSTY-SOAPDISH", 100, None)]
+
+
+@pytest.mark.integration
+@pytest.mark.repository
+def test_repository_can_delete_batch(orm_session):
+    batch = Batch("batch100500", "BLUE-SARDINA", 50, eta=None)
+
+    repo = SQLAlchemyRepository(orm_session=orm_session)
+    repo.add(batch)
+    orm_session.commit()
+    repo.delete(reference=batch.reference)
+
+    rows = orm_session.execute(statement=text('SELECT reference, sku, _purchase_quantity, eta FROM "batches"'))
+    assert list(rows) == []
 
 
 @pytest.mark.integration

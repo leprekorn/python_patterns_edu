@@ -7,7 +7,7 @@ from allocation.adapters import orm, repository
 from allocation.service_layer import services
 from fastapi import FastAPI, HTTPException
 
-from allocation.entrypoints.schemas import AllocateRequest, DeallocateRequest, AddBatchRequest
+from allocation.entrypoints.schemas import AllocateRequest, DeallocateRequest, AddBatchRequest, DeleteBatchRequest
 from datetime import datetime
 
 orm.start_mappers()
@@ -16,7 +16,7 @@ app = FastAPI()
 
 
 @app.post("/allocate", status_code=201)
-def allocate_endpoint(payload: AllocateRequest):
+def allocate(payload: AllocateRequest):
     session = get_session()
     repo = repository.SQLAlchemyRepository(session)
     orderId = payload.orderid
@@ -40,8 +40,16 @@ def add_batch(payload: AddBatchRequest):
     services.add_batch(reference=reference, sku=sku, qty=qty, eta=eta, repo=repo, session=session)
 
 
+@app.delete("/batches/", status_code=204)
+def delete_batch(payload: DeleteBatchRequest):
+    session = get_session()
+    repo = repository.SQLAlchemyRepository(session)
+    reference = payload.reference
+    services.delete_batch(reference=reference, repo=repo, session=session)
+
+
 @app.post("/deallocate", status_code=200)
-def deallocate_endpoint(payload: DeallocateRequest):
+def deallocate(payload: DeallocateRequest):
     session = get_session()
     repo = repository.SQLAlchemyRepository(session)
     try:
@@ -59,7 +67,7 @@ def deallocate_endpoint(payload: DeallocateRequest):
 
 
 @app.get("/batches/{batchref}")
-def get_endpoint(batchref: str):
+def get(batchref: str):
     session = get_session()
     repo = repository.SQLAlchemyRepository(session)
     batch = repo.get(reference=batchref)

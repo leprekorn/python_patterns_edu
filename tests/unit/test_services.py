@@ -86,3 +86,29 @@ def test_add_batch(make_fake_repo_session):
     assert added.sku == "ADORABLE-SETTEE"
     assert added._purchase_quantity == 12
     assert session.committed is True
+
+
+@pytest.mark.unit
+@pytest.mark.service
+def test_delete_batch(make_fake_repo_session):
+    repo, session = make_fake_repo_session
+
+    services.add_batch(
+        reference="b1",
+        sku="ADORABLE-SETTEE",
+        qty=12,
+        eta=None,
+        repo=repo,
+        session=session,
+    )
+
+    services.delete_batch(
+        reference="b1",
+        repo=repo,
+        session=session,
+    )
+    deleted = repo.get(reference="b1")
+    assert deleted is None
+    assert session.committed is True
+    existing = repo.list()
+    assert existing == []

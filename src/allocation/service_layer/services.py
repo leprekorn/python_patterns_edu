@@ -54,3 +54,14 @@ def add_batch(
     repo.add(batch)
     session.commit()
     return batch
+
+
+def delete_batch(
+    reference: str,
+    repo: IRepository,
+    session: ISession,
+) -> None:
+    batch = repo.get(reference=reference)
+    if batch:
+        repo.delete(batch.reference)
+        session.commit()

@@ -27,6 +27,11 @@ class FakeRepository(IRepository):
     def add(self, batch: Batch):
         self._batches.add(batch)
 
+    def delete(self, reference: str):
+        batch = self.get(reference)
+        if batch:
+            self._batches.remove(batch)
+
     def get(self, reference: str) -> Optional[Batch]:
         try:
             batch = next(b for b in self._batches if b.reference == reference)
@@ -84,6 +89,7 @@ def in_memory_db():
 
 @pytest.fixture
 def orm_session(in_memory_db):
+    clear_mappers()
     start_mappers()
     orm_session = sessionmaker(bind=in_memory_db)()
     yield orm_session

@@ -18,3 +18,7 @@ class AddBatchRequest(BaseModel):
     sku: str
     qty: int
     eta: Optional[str] = None
+
+
+class DeleteBatchRequest(BaseModel):
+    reference: str
