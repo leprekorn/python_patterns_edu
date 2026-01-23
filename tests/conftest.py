@@ -16,6 +16,42 @@ import time
 import pathlib
 import httpx
 
+from allocation.adapters.repository import IRepository
+from allocation.service_layer.services import ISession
+from typing import List
+
+
+class FakeRepository(IRepository):
+    def __init__(self, batches: List[Batch]):
+        self._batches = set(batches)
+
+    def add(self, batch: Batch):
+        self._batches.add(batch)
+
+    def get(self, reference: str) -> Optional[Batch]:
+        try:
+            batch = next(b for b in self._batches if b.reference == reference)
+        except StopIteration:
+            return None
+        return batch
+
+    def list(self):
+        return list(self._batches)
+
+
+class FakeSession(ISession):
+    committed = False
+
+    def commit(self):
+        self.committed = True
+
+
+@pytest.fixture(scope="function")
+def make_fake_repo_session() -> Tuple[FakeRepository, FakeSession]:
+    repo = FakeRepository([])
+    session = FakeSession()
+    return repo, session
+
 
 @pytest.fixture(scope="function")
 def make_batch_and_line() -> Callable[..., Tuple[Batch, OrderLine]]:

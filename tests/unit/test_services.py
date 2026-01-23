@@ -1,62 +1,33 @@
 import pytest
-from allocation.adapters.repository import IRepository
-from allocation.domain import model
 from allocation.domain.exceptions import UnallocatedLine, InvalidBatchReference
 from allocation.service_layer import services
-from typing import List, Optional
-
-
-class FakeRepository(IRepository):
-    def __init__(self, batches: List[model.Batch]):
-        self._batches = set(batches)
-
-    def add(self, batch: model.Batch):
-        self._batches.add(batch)
-
-    def get(self, reference: str) -> Optional[model.Batch]:
-        try:
-            batch = next(b for b in self._batches if b.reference == reference)
-        except StopIteration:
-            return None
-        return batch
-
-    def list(self):
-        return list(self._batches)
-
-
-class FakeSession(services.ISession):
-    committed = False
-
-    def commit(self):
-        self.committed = True
 
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_returns_allocation():
-    batch = model.Batch("b1", "COMPLICATED-LAMP", 100, eta=None)
-    repo = FakeRepository([batch])
+def test_returns_allocation(make_fake_repo_session):
+    repo, session = make_fake_repo_session
+    batch = services.add_batch(reference="b1", sku="COMPLICATED-LAMP", qty=100, eta=None, repo=repo, session=session)
 
-    result = services.allocate(orderId="o1", sku="COMPLICATED-LAMP", qty=10, repo=repo, session=FakeSession())
+    result = services.allocate(orderId="o1", sku="COMPLICATED-LAMP", qty=10, repo=repo, session=session)
     assert result == batch
 
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_error_for_invalid_sku():
-    batch = model.Batch("b1", "AREALSKU", 100, eta=None)
-    repo = FakeRepository([batch])
+def test_error_for_invalid_sku(make_fake_repo_session):
+    repo, session = make_fake_repo_session
+    services.add_batch(reference="b1", sku="AREALSKU", qty=100, eta=None, repo=repo, session=session)
 
     with pytest.raises(services.InvalidSku, match="Invalid sku NONEXISTENTSKU"):
-        services.allocate(orderId="01", sku="NONEXISTENTSKU", qty=10, repo=repo, session=FakeSession())
+        services.allocate(orderId="01", sku="NONEXISTENTSKU", qty=10, repo=repo, session=session)
 
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_commits():
-    batch = model.Batch("b1", "OMINOUS-MIRROR", 100, eta=None)
-    repo = FakeRepository([batch])
-    session = FakeSession()
+def test_commits(make_fake_repo_session):
+    repo, session = make_fake_repo_session
+    services.add_batch(reference="b1", sku="OMINOUS-MIRROR", qty=100, eta=None, repo=repo, session=session)
 
     services.allocate(orderId="o1", sku="OMINOUS-MIRROR", qty=10, repo=repo, session=session)
     assert session.committed is True
@@ -64,42 +35,41 @@ def test_commits():
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_deallocate_returns_batch_reference():
-    batch = model.Batch("b50", "CRAZY-CHAIR", 100, eta=None)
-    repo = FakeRepository([batch])
-
-    result = services.allocate(orderId="o20", sku="CRAZY-CHAIR", qty=10, repo=repo, session=FakeSession())
+def test_deallocate_returns_batch_reference(make_fake_repo_session):
+    repo, session = make_fake_repo_session
+    batch = services.add_batch(reference="b50", sku="CRAZY-CHAIR", qty=100, eta=None, repo=repo, session=session)
+    result = services.allocate(orderId="o20", sku="CRAZY-CHAIR", qty=10, repo=repo, session=session)
     assert result == batch
     assert batch.available_quantity == 90
 
-    unallocation_result = services.deallocate(batchref=batch.reference, orderId="o20", repo=repo, session=FakeSession())
+    unallocation_result = services.deallocate(batchref=batch.reference, orderId="o20", repo=repo, session=session)
     assert unallocation_result == batch
     assert batch.available_quantity == 100
 
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_deallocate_non_allocated_line_raises_exception():
+def test_deallocate_non_allocated_line_raises_exception(make_fake_repo_session):
+    repo, session = make_fake_repo_session
     orderId = "o30"
-    batch = model.Batch("b70", "FANCY-TABLE", 50, eta=None)
-    repo = FakeRepository([batch])
+    batch = services.add_batch(reference="b70", sku="FANCY-TABLE", qty=50, eta=None, repo=repo, session=session)
     with pytest.raises(UnallocatedLine, match=f"Order line {orderId} is not allocated to batch {batch.reference}"):
-        services.deallocate(batchref=batch.reference, orderId=orderId, repo=repo, session=FakeSession())
+        services.deallocate(batchref=batch.reference, orderId=orderId, repo=repo, session=session)
 
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_deallocate_for_absent_batch_raises_exception():
-    batch = model.Batch("b70", "COZY-SOFA", 50, eta=None)
-    repo = FakeRepository([])
+def test_deallocate_for_absent_batch_raises_exception(make_fake_repo_session):
+    repo, session = make_fake_repo_session
+    absent_batch_ref = "b70"
+    with pytest.raises(InvalidBatchReference, match=f"Invalid batch reference {absent_batch_ref}"):
+        services.deallocate(batchref=absent_batch_ref, orderId="o30", repo=repo, session=session)
 
-    with pytest.raises(InvalidBatchReference, match=f"Invalid batch reference {batch.reference}"):
-        services.deallocate(batchref=batch.reference, orderId="o30", repo=repo, session=FakeSession())
 
-
-def test_add_batch():
-    repo = FakeRepository([])
-    session = FakeSession()
+@pytest.mark.unit
+@pytest.mark.service
+def test_add_batch(make_fake_repo_session):
+    repo, session = make_fake_repo_session
 
     services.add_batch(
         reference="b1",
