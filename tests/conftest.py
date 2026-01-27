@@ -17,7 +17,7 @@ import httpx
 
 from allocation.adapters.repository import IRepository
 from allocation.service_layer.services import ISession
-from typing import List
+from typing import List, Generator
 
 
 class FakeRepository(IRepository):
@@ -94,6 +94,15 @@ def orm_session(in_memory_db):
     orm_session = sessionmaker(bind=in_memory_db)()
     yield orm_session
     orm_session.close()
+    clear_mappers()
+
+
+@pytest.fixture
+def session_factory(in_memory_db) -> Generator[Callable[[], ISession], None, None]:
+    clear_mappers()
+    start_mappers()
+    callable_session = sessionmaker(bind=in_memory_db)
+    yield callable_session
     clear_mappers()
 
 
