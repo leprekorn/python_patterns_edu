@@ -15,9 +15,21 @@ import time
 import pathlib
 import httpx
 
-from allocation.adapters.repository import IRepository
-from allocation.service_layer.services import ISession
+from allocation.interfaces.main import IRepository, ISession, IUnitOfWork
 from typing import List, Generator
+
+
+class FakeUnitOfWork(IUnitOfWork):
+    def __init__(self, session_factory: Callable[[], ISession]):
+        self.batches = FakeRepository([])
+        self.session_factory = session_factory
+        self.committed = False
+
+    def commit(self):
+        self.committed = True
+
+    def rollback(self):
+        pass
 
 
 class FakeRepository(IRepository):
@@ -49,12 +61,31 @@ class FakeSession(ISession):
     def commit(self):
         self.committed = True
 
+    def close(self):
+        raise NotImplementedError
+
+    def rollback(self):
+        raise NotImplementedError
+
+    def add(self, instance: Batch):
+        raise NotImplementedError
+
+    def query(self, model_class):
+        raise NotImplementedError
+
 
 @pytest.fixture(scope="function")
 def make_fake_repo_session() -> Tuple[FakeRepository, FakeSession]:
     repo = FakeRepository([])
     session = FakeSession()
     return repo, session
+
+
+@pytest.fixture(scope="function")
+def make_fake_uow(session_factory) -> FakeUnitOfWork:
+    session_factory = session_factory
+    uow = FakeUnitOfWork(session_factory=session_factory)
+    return uow
 
 
 @pytest.fixture(scope="function")

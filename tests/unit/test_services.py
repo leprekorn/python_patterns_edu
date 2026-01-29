@@ -68,24 +68,17 @@ def test_deallocate_for_absent_batch_raises_exception(make_fake_repo_session):
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_add_batch(make_fake_repo_session):
-    repo, session = make_fake_repo_session
+def test_add_batch(make_fake_uow):
+    uow = make_fake_uow
 
-    services.add_batch(
-        reference="b1",
-        sku="ADORABLE-SETTEE",
-        qty=12,
-        eta=None,
-        repo=repo,
-        session=session,
-    )
+    services.add_batch(reference="b1", sku="ADORABLE-SETTEE", qty=12, eta=None, uow=uow)
 
-    added = repo.get("b1")
+    added = uow.batches.get("b1")
     assert added is not None
     assert added.reference == "b1"
     assert added.sku == "ADORABLE-SETTEE"
     assert added._purchase_quantity == 12
-    assert session.committed is True
+    assert uow.session.committed is True
 
 
 @pytest.mark.unit

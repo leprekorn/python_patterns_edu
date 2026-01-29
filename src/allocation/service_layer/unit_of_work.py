@@ -1,25 +1,8 @@
-from typing import Protocol, Callable
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from allocation import config
-from allocation.adapters.repository import SQLAlchemyRepository, IRepository
-
-
-class IUnitOfWork(Protocol):
-    session_factory: Callable[[], Session]
-    batches: IRepository
-
-    def __enter__(self) -> "IUnitOfWork":
-        return self
-
-    def __exit__(self, *args):
-        self.rollback()
-
-    def commit(self):
-        raise NotImplementedError
-
-    def rollback(self):
-        raise NotImplementedError
+from allocation.interfaces.main import IUnitOfWork
+from allocation.adapters.repository import SQLAlchemyRepository
 
 
 DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(url=config.get_db_uri()))

@@ -1,28 +1,10 @@
-from typing import Protocol, Optional, List
-from sqlalchemy.orm import Session
+from typing import Optional, List
+from allocation.interfaces.main import IRepository, ISession
 from allocation.domain.model import Batch
 
 
-class IRepository(Protocol):
-    """
-    Interface for any ORM and storage
-    """
-
-    def add(self, batch: Batch):
-        raise NotImplementedError
-
-    def get(self, reference: str) -> Optional[Batch]:
-        raise NotImplementedError
-
-    def list(self) -> List[Batch]:
-        raise NotImplementedError
-
-    def delete(self, reference: str):
-        raise NotImplementedError
-
-
 class SQLAlchemyRepository(IRepository):
-    def __init__(self, orm_session: Session):
+    def __init__(self, orm_session: ISession):
         self.orm_session = orm_session
 
     def add(self, batch: Batch):
