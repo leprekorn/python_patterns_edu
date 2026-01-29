@@ -59,32 +59,6 @@ class FakeRepository(IRepository):
         return list(self._batches)
 
 
-class FakeSession(ISession):
-    committed = False
-
-    def commit(self):
-        self.committed = True
-
-    def close(self):
-        raise NotImplementedError
-
-    def rollback(self):
-        raise NotImplementedError
-
-    def add(self, instance: Batch):
-        raise NotImplementedError
-
-    def query(self, model_class):
-        raise NotImplementedError
-
-
-@pytest.fixture(scope="function")
-def make_fake_repo_session() -> Tuple[FakeRepository, FakeSession]:
-    repo = FakeRepository([])
-    session = FakeSession()
-    return repo, session
-
-
 @pytest.fixture(scope="function")
 def make_fake_uow(session_factory: Callable[[], ISession]) -> FakeUnitOfWork:
     session_factory = session_factory
@@ -110,7 +84,7 @@ def make_batch_and_line() -> Callable[..., Tuple[Batch, OrderLine]]:
     return _make
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def in_memory_db():
     engine = create_engine(
         "sqlite:///:memory:",
@@ -122,7 +96,7 @@ def in_memory_db():
     engine.dispose()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def orm_session(in_memory_db):
     clear_mappers()
     start_mappers()
@@ -132,7 +106,7 @@ def orm_session(in_memory_db):
     clear_mappers()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def session_factory(in_memory_db) -> Generator[Callable[[], ISession], None, None]:
     clear_mappers()
     start_mappers()
