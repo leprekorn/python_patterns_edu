@@ -17,8 +17,8 @@ def allocate(payload: AllocateRequest):
     sku = payload.sku
     qty = payload.qty
     try:
-        batch = services.allocate(orderId=orderId, sku=sku, qty=qty, uow=uow)
-        return {"batchref": batch.reference}
+        batch_ref = services.allocate(orderId=orderId, sku=sku, qty=qty, uow=uow)
+        return {"batchref": batch_ref}
     except (OutOfStock, services.InvalidSku) as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -43,12 +43,12 @@ def delete_batch(batchref: str):
 @app.post("/deallocate", status_code=200)
 def deallocate(payload: DeallocateRequest):
     try:
-        batch = services.deallocate(
+        batch_ref = services.deallocate(
             batchref=payload.batchref,
             orderId=payload.orderid,
             uow=uow,
         )
-        return {"batchref": batch.reference}
+        return {"batchref": batch_ref}
     except InvalidBatchReference as e:
         raise HTTPException(status_code=404, detail=str(e))
     except UnallocatedLine as e:

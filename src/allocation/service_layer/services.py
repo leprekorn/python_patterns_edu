@@ -9,7 +9,7 @@ def is_valid_sku(sku: str, batches: List[model.Batch]) -> bool:
     return sku in {b.sku for b in batches}
 
 
-def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> model.Batch:
+def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> str:
     line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
 
     with uow:
@@ -18,10 +18,10 @@ def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> model.Batch:
             raise InvalidSku(f"Invalid sku {line.sku}")
         batch = model.allocate(line=line, batches=batches)
         uow.commit()
-        return batch
+        return batch.reference
 
 
-def deallocate(batchref: str, orderId: str, uow: IUnitOfWork) -> model.Batch:
+def deallocate(batchref: str, orderId: str, uow: IUnitOfWork) -> str:
     with uow:
         batch = uow.batches.get(reference=batchref)
         if not batch:
@@ -33,7 +33,7 @@ def deallocate(batchref: str, orderId: str, uow: IUnitOfWork) -> model.Batch:
 
         batch.deallocate(line=line)
         uow.commit()
-        return batch
+        return batch.reference
 
 
 def add_batch(
@@ -47,7 +47,7 @@ def add_batch(
     with uow:
         uow.batches.add(batch)
         uow.commit()
-    return batch
+    return batch  # TODO do not return ORM object, return batchref str
 
 
 def delete_batch(reference: str, uow: IUnitOfWork) -> None:

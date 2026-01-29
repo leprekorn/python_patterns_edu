@@ -10,7 +10,7 @@ def test_batch_allocate_returns_allocation(make_fake_uow):
     batch = services.add_batch(reference="b1", sku="COMPLICATED-LAMP", qty=100, eta=None, uow=uow)
 
     result = services.allocate(orderId="o1", sku="COMPLICATED-LAMP", qty=10, uow=uow)
-    assert result == batch
+    assert result == batch.reference
 
 
 @pytest.mark.unit
@@ -37,11 +37,11 @@ def test_deallocate_returns_batch_reference(make_fake_uow):
     uow = make_fake_uow
     batch = services.add_batch(reference="b50", sku="CRAZY-CHAIR", qty=100, eta=None, uow=uow)
     result = services.allocate(orderId="o20", sku="CRAZY-CHAIR", qty=10, uow=uow)
-    assert result == batch
+    assert result == batch.reference
     assert batch.available_quantity == 90
 
     unallocation_result = services.deallocate(batchref=batch.reference, orderId="o20", uow=uow)
-    assert unallocation_result == batch
+    assert unallocation_result == batch.reference
     assert batch.available_quantity == 100
 
 
