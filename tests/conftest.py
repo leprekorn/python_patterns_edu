@@ -21,9 +21,13 @@ from typing import List, Generator
 
 class FakeUnitOfWork(IUnitOfWork):
     def __init__(self, session_factory: Callable[[], ISession]):
-        self.batches = FakeRepository([])
         self.session_factory = session_factory
         self.committed = False
+        self.batches = FakeRepository([])
+
+    def __enter__(self):
+        self.session = self.session_factory()
+        return super().__enter__()
 
     def commit(self):
         self.committed = True
@@ -82,7 +86,7 @@ def make_fake_repo_session() -> Tuple[FakeRepository, FakeSession]:
 
 
 @pytest.fixture(scope="function")
-def make_fake_uow(session_factory) -> FakeUnitOfWork:
+def make_fake_uow(session_factory: Callable[[], ISession]) -> FakeUnitOfWork:
     session_factory = session_factory
     uow = FakeUnitOfWork(session_factory=session_factory)
     return uow
