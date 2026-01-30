@@ -3,6 +3,7 @@ from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
 from sqlalchemy import text
 from typing import Optional
 from datetime import date
+import pytest
 
 
 def insert_batch(session, ref: str, sku: str, qty: int, eta: Optional[date]):
@@ -39,3 +40,28 @@ def test_uow_can_get_batch_and_allocate_to_it(session_factory):
     ).scalar_one()
 
     assert allocated_batch_ref == batchRef
+
+
+def test_rolls_back_uncommitted_work_by_default(session_factory):
+    uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
+    with uow:
+        insert_batch(uow.session, "batch1", "MEDIUM-PLINTH", 100, None)
+
+    new_session = session_factory()
+    rows = list(new_session.execute(text("SELECT * FROM batches")))
+    assert rows == []
+
+
+def test_rolls_back_on_error(session_factory):
+    class MyException(Exception):
+        pass
+
+    uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
+    with pytest.raises(MyException):
+        with uow:
+            insert_batch(uow.session, "batch1", "LARGE-FORK", 100, None)
+            raise MyException()
+
+    new_session = session_factory()
+    rows = list(new_session.execute(text("SELECT * FROM batches")))
+    assert rows == []
