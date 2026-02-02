@@ -56,12 +56,5 @@ def deallocate(payload: DeallocateRequest):
 
 @app.get("/batches/{batchref}")
 def get(sku: str, batchref: str):
-    batch = services.get_batch(sku=sku, reference=batchref, uow=uow)
-    if not batch:
-        raise HTTPException(status_code=404, detail=f"Batch {batchref} not found")
-    return {
-        "reference": batch.reference,
-        "sku": batch.sku,
-        "qty": batch._purchase_quantity,
-        "eta": batch.eta.isoformat() if batch.eta else None,
-    }
+    batch_data = services.get_batch(sku=sku, reference=batchref, uow=uow)
+    return batch_data

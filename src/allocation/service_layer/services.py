@@ -13,9 +13,21 @@ def get_product(sku: str, uow: IUnitOfWork) -> model.Product:
         return product
 
 
-def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> model.Batch:
-    product = get_product(sku=sku, uow=uow)
-    return product.get_batch(reference=reference)
+def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
+    with uow:
+        product = uow.products.get(sku=sku)
+        if not product:
+            raise InvalidSku(f"Invalid sku {sku}")
+
+        batch = product.get_batch(reference=reference)
+        if not batch:
+            raise model.InvalidBatchReference(f"Batch {reference} not found")
+        return {
+            "reference": batch.reference,
+            "sku": batch.sku,
+            "qty": batch._purchase_quantity,
+            "eta": batch.eta.isoformat() if batch.eta else None,
+        }
 
 
 def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> str:

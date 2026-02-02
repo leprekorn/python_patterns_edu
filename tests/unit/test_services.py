@@ -78,9 +78,9 @@ def test_add_batch(make_fake_uow):
 
     added = services.get_batch(sku="ADORABLE-SETTEE", reference="b1", uow=uow)
     assert added is not None
-    assert added.reference == "b1"
-    assert added.sku == "ADORABLE-SETTEE"
-    assert added._purchase_quantity == 12
+    assert added["reference"] == "b1"
+    assert added["sku"] == "ADORABLE-SETTEE"
+    assert added["qty"] == 12
     assert uow.committed is True
 
 
