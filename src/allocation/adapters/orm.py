@@ -58,5 +58,14 @@ def start_mappers() -> None:
     mapper_registry.map_imperatively(
         Product,
         products,
-        properties={"batches": relationship(Batch, backref="product", cascade="all, delete-orphan")},
+        properties={
+            "batches": relationship(
+                Batch,
+                foreign_keys=[batches.c.sku],
+                primaryjoin=products.c.sku == batches.c.sku,
+                backref="product",
+                cascade="all, delete-orphan",
+            )
+        },
+        primary_key=[products.c.sku],
     )

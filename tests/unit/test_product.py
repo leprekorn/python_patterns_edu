@@ -1,5 +1,5 @@
 import pytest
-from allocation.domain.model import Batch, OrderLine
+from allocation.domain.model import Batch, OrderLine, Product
 from allocation.domain.exceptions import OutOfStock
 import datetime
 
@@ -95,6 +95,7 @@ def test_allocation_is_idempotent(make_batch_and_line):
 def test_prefers_current_stock_batches_to_shipments():
     in_stock_batch = Batch(ref="in-stock-batch", sku="RETRO-CLOCK", qty=100, eta=None)
     shipment_batch = Batch(ref="shipment_batch", sku="RETRO-CLOCK", qty=100, eta=tomorrow)
+    product = Product(sku="RETRO-CLOCK", batches=[in_stock_batch, shipment_batch])
     line = OrderLine(orderId="oref", sku="RETRO-CLOCK", qty=10)
 
     assert in_stock_batch < shipment_batch
@@ -104,7 +105,7 @@ def test_prefers_current_stock_batches_to_shipments():
     gt_result = shipment_batch.__gt__(in_stock_batch)
     assert gt_result is True
 
-    allocated_batch = allocate(line=line, batches=[in_stock_batch, shipment_batch])
+    allocated_batch = product.allocate(line=line)
     assert allocated_batch is in_stock_batch
     assert shipment_batch.available_quantity == 100
     assert in_stock_batch.available_quantity == 90
@@ -116,7 +117,8 @@ def test_prefers_earlier_batches():
     medium = Batch(ref="medium_batch", sku="MINIMALIST_SPOON", qty=100, eta=tomorrow)
     slower = Batch(ref="slow-batch", sku="MINIMALIST_SPOON", qty=100, eta=day_after_tomorrow)
     line = OrderLine(orderId="oref", sku="MINIMALIST_SPOON", qty=10)
-    allocated_batch = allocate(line=line, batches=[fastest, medium, slower])
+    product = Product(sku="MINIMALIST_SPOON", batches=[slower, medium, fastest])
+    allocated_batch = product.allocate(line=line)
     assert allocated_batch is fastest
     assert fastest.available_quantity == 90
     assert medium.available_quantity == 100
@@ -131,9 +133,10 @@ def test_raises_out_of_stock_exception_if_cannot_allocate(make_batch_and_line):
         line_sku="SMALL-FORK",
         line_qty=2,
     )
+    product = Product(sku="SMALL-FORK", batches=[batch])
 
-    allocate(line=line, batches=[batch])
+    product.allocate(line=line)
 
     extra_order = OrderLine(orderId="extra_oder", sku="SMALL-FORK", qty=10)
     with pytest.raises(OutOfStock, match="SMALL-FORK"):
-        allocate(line=extra_order, batches=[batch])
+        product.allocate(line=extra_order)

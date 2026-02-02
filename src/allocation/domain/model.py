@@ -15,8 +15,6 @@ class OrderLine:
 
 
 class Batch:
-    __slots__ = ["reference", "sku", "eta", "_purchase_quantity", "_allocations"]
-
     def __init__(self, ref: str, sku: str, qty: int, eta: Optional[date]):
         self.reference = ref
         self.sku = sku
@@ -77,11 +75,9 @@ class Batch:
 
 
 class Product:
-    __slots__ = ["sku", "batches"]
-
-    def __init__(self, sku: str, batches: List[Batch]):
+    def __init__(self, sku: str, batches: Optional[List[Batch]] = None):
         self.sku = sku
-        self.batches = batches
+        self.batches = batches or []
 
     def allocate(self, line: OrderLine) -> Batch:
         try:

@@ -23,10 +23,10 @@ def test_uow_can_get_batch_and_allocate_to_it(session_factory):
 
     uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
     with uow:
-        existing_batch: Optional[model.Batch] = uow.batches.get(reference=batchRef)
-        assert existing_batch is not None
+        product = uow.products.get(sku=sku)
+        assert product is not None
         line = model.OrderLine(orderId=orderId, sku=sku, qty=10)
-        existing_batch.allocate(line)
+        product.allocate(line)
         uow.commit()
 
     orderLine_id = session.execute(

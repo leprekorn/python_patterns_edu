@@ -1,5 +1,5 @@
 import pytest
-from allocation.domain.model import OrderLine, Batch
+from allocation.domain.model import OrderLine, Product, Batch
 from allocation.adapters.orm import metadata, start_mappers
 from allocation import config
 from allocation.entrypoints.main import app
@@ -23,7 +23,7 @@ class FakeUnitOfWork(IUnitOfWork):
     def __init__(self, session_factory: Callable[[], ISession]):
         self.session_factory = session_factory
         self.committed = False
-        self.batches = FakeRepository([])
+        self.products = FakeRepository([])
 
     def __enter__(self):
         self.session = self.session_factory()
@@ -37,26 +37,23 @@ class FakeUnitOfWork(IUnitOfWork):
 
 
 class FakeRepository(IRepository):
-    def __init__(self, batches: List[Batch]):
-        self._batches = set(batches)
+    def __init__(self, products: List[Product]):
+        self._products = set(products)
 
-    def add(self, batch: Batch):
-        self._batches.add(batch)
+    def add(self, product: Product):
+        self._products.add(product)
 
-    def delete(self, reference: str):
-        batch = self.get(reference)
-        if batch:
-            self._batches.remove(batch)
+    def delete(self, sku: str):
+        product = self.get(sku=sku)
+        if product:
+            self._products.remove(product)
 
-    def get(self, reference: str) -> Optional[Batch]:
-        try:
-            batch = next(b for b in self._batches if b.reference == reference)
-        except StopIteration:
-            return None
-        return batch
+    def get(self, sku: str) -> Optional[Product]:
+        product = next((b for b in self._products if b.sku == sku), None)
+        return product
 
     def list(self):
-        return list(self._batches)
+        return list(self._products)
 
 
 @pytest.fixture(scope="function")
