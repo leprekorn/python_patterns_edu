@@ -1,4 +1,4 @@
-from allocation.domain.exceptions import OutOfStock, InvalidBatchReference, UnallocatedLine
+from allocation.domain.exceptions import OutOfStock, InvalidBatchReference, UnallocatedLine, InvalidSku
 from allocation.adapters import orm
 from allocation.service_layer import services, unit_of_work
 from fastapi import FastAPI, HTTPException
@@ -36,6 +36,8 @@ def add_batch(payload: AddBatchRequest):
 def delete_batch(sku: str, batchref: str):
     try:
         services.delete_batch(sku=sku, reference=batchref, uow=uow)
+    except InvalidSku as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except InvalidBatchReference as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -50,6 +52,8 @@ def deallocate(payload: DeallocateRequest):
             uow=uow,
         )
         return {"batchref": batch_ref}
+    except InvalidSku as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except UnallocatedLine as e:
         raise HTTPException(status_code=400, detail=str(e))
 

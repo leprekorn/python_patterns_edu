@@ -5,14 +5,6 @@ from typing import Optional
 from datetime import date
 
 
-def get_product(sku: str, uow: IUnitOfWork) -> model.Product:
-    with uow:
-        product = uow.products.get(sku=sku)
-        if not product:
-            raise InvalidSku(f"Invalid sku {sku}")
-        return product
-
-
 def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
     with uow:
         product = uow.products.get(sku=sku)
@@ -32,17 +24,21 @@ def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
 
 def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> str:
     line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
-    product = get_product(sku=sku, uow=uow)
     with uow:
+        product = uow.products.get(sku=sku)
+        if not product:
+            raise InvalidSku(f"Invalid sku {sku}")
         batch = product.allocate(line=line)
         uow.commit()
         return batch.reference
 
 
 def deallocate(sku: str, orderId: str, qty: int, uow: IUnitOfWork) -> str:
-    product = get_product(sku=sku, uow=uow)
+    line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
     with uow:
-        line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
+        product = uow.products.get(sku=sku)
+        if not product:
+            raise InvalidSku(f"Invalid sku {sku}")
         batchref = product.deallocate(line=line)
         uow.commit()
         return batchref
@@ -67,7 +63,9 @@ def add_batch(
 
 
 def delete_batch(sku: str, reference: str, uow: IUnitOfWork) -> None:
-    product = get_product(sku=sku, uow=uow)
     with uow:
+        product = uow.products.get(sku=sku)
+        if not product:
+            raise InvalidSku(f"Invalid sku {sku}")
         product.delete_batch(reference=reference)
         uow.commit()
