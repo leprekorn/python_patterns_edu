@@ -8,6 +8,11 @@ import pytest
 
 def insert_batch(session, ref: str, sku: str, qty: int, eta: Optional[date]):
     session.execute(
+        text("INSERT INTO products (sku) VALUES (:sku)"),
+        dict(sku=sku),
+    )
+
+    session.execute(
         text("INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES (:ref, :sku, :_purchase_quantity, :eta)"),
         dict(ref=ref, sku=sku, _purchase_quantity=qty, eta=eta),
     )
