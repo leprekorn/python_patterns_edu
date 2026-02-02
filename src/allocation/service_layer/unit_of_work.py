@@ -14,7 +14,7 @@ class SqlAlchemyUnitOfWork(IUnitOfWork):
 
     def __enter__(self):
         self.session = self.session_factory()
-        self.batches = SQLAlchemyRepository(self.session)
+        self.products = SQLAlchemyRepository(self.session)
         return super().__enter__()
 
     def __exit__(self, *args):

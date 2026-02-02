@@ -1,5 +1,5 @@
 import pytest
-from allocation.domain.model import Batch, OrderLine, allocate
+from allocation.domain.model import Batch, OrderLine
 from allocation.domain.exceptions import OutOfStock
 import datetime
 

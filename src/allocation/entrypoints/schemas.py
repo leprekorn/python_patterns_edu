@@ -9,8 +9,9 @@ class AllocateRequest(BaseModel):
 
 
 class DeallocateRequest(BaseModel):
-    batchref: str
+    sku: str
     orderid: str
+    qty: int
 
 
 class AddBatchRequest(BaseModel):

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Set, Any, List
 from datetime import date
-from allocation.domain.exceptions import OutOfStock
+from allocation.domain.exceptions import OutOfStock, UnallocatedLine, InvalidBatchReference
 
 
 @dataclass(eq=True)
@@ -15,6 +15,8 @@ class OrderLine:
 
 
 class Batch:
+    __slots__ = ["reference", "sku", "eta", "_purchase_quantity", "_allocations"]
+
     def __init__(self, ref: str, sku: str, qty: int, eta: Optional[date]):
         self.reference = ref
         self.sku = sku
@@ -74,10 +76,39 @@ class Batch:
         return None
 
 
-def allocate(line: OrderLine, batches: List[Batch]) -> Batch:
-    try:
-        batch = next(b for b in sorted(batches) if b.can_allocate(line))
-        batch.allocate(line)
-    except StopIteration:
-        raise OutOfStock(f"There is no batch with sku: {line.sku} available")
-    return batch
+class Product:
+    __slots__ = ["sku", "batches"]
+
+    def __init__(self, sku: str, batches: List[Batch]):
+        self.sku = sku
+        self.batches = batches
+
+    def allocate(self, line: OrderLine) -> Batch:
+        try:
+            batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
+            batch.allocate(line)
+        except StopIteration:
+            raise OutOfStock(f"There is no batch with sku: {line.sku} available")
+        return batch
+
+    def deallocate(self, line: OrderLine) -> str:
+        try:
+            batch = next(b for b in self.batches if b.allocated_line(line.orderId))
+            batch.deallocate(line)
+            return batch.reference
+        except StopIteration:
+            raise UnallocatedLine(f"Order line {line.orderId} is not allocated to any batch in Product {self.sku}")
+
+    @property
+    def batches_list(self) -> List[Batch]:
+        return self.batches
+
+    def get_batch(self, reference: str) -> Batch:
+        batch = next((b for b in self.batches if b.reference == reference), None)
+        if not batch:
+            raise InvalidBatchReference(f"Invalid batch reference {reference}")
+        return batch
+
+    def delete_batch(self, reference: str) -> None:
+        batch = self.get_batch(reference=reference)
+        self.batches.remove(batch)

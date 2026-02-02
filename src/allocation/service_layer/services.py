@@ -1,39 +1,39 @@
 from allocation.domain import model
-from allocation.domain.exceptions import InvalidSku, InvalidBatchReference, UnallocatedLine
+from allocation.domain.exceptions import InvalidSku
 from allocation.service_layer.unit_of_work import IUnitOfWork
-from typing import List, Optional
+from typing import Optional
 from datetime import date
 
 
-def is_valid_sku(sku: str, batches: List[model.Batch]) -> bool:
-    return sku in {b.sku for b in batches}
+def get_product(sku: str, uow: IUnitOfWork) -> model.Product:
+    with uow:
+        product = uow.products.get(sku=sku)
+        if not product:
+            raise InvalidSku(f"Invalid sku {sku}")
+        return product
+
+
+def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> model.Batch:
+    product = get_product(sku=sku, uow=uow)
+    return product.get_batch(reference=reference)
 
 
 def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> str:
     line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
-
+    product = get_product(sku=sku, uow=uow)
     with uow:
-        batches = uow.batches.list()
-        if not is_valid_sku(line.sku, batches):
-            raise InvalidSku(f"Invalid sku {line.sku}")
-        batch = model.allocate(line=line, batches=batches)
+        batch = product.allocate(line=line)
         uow.commit()
         return batch.reference
 
 
-def deallocate(batchref: str, orderId: str, uow: IUnitOfWork) -> str:
+def deallocate(sku: str, orderId: str, qty: int, uow: IUnitOfWork) -> str:
+    product = get_product(sku=sku, uow=uow)
     with uow:
-        batch = uow.batches.get(reference=batchref)
-        if not batch:
-            raise InvalidBatchReference(f"Invalid batch reference {batchref}")
-
-        line = batch.allocated_line(orderId=orderId)
-        if not line:
-            raise UnallocatedLine(f"Order line {orderId} is not allocated to batch {batchref}")
-
-        batch.deallocate(line=line)
+        line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
+        batchref = product.deallocate(line=line)
         uow.commit()
-        return batch.reference
+        return batchref
 
 
 def add_batch(
@@ -45,15 +45,17 @@ def add_batch(
 ) -> model.Batch:
     batch = model.Batch(ref=reference, sku=sku, qty=qty, eta=eta)
     with uow:
-        uow.batches.add(batch)
+        product = uow.products.get(sku=sku)
+        if not product:
+            product = model.Product(sku=sku, batches=[])
+            uow.products.add(product)
+        product.batches.append(batch)
         uow.commit()
     return batch  # TODO do not return ORM object, return batchref str
 
 
-def delete_batch(reference: str, uow: IUnitOfWork) -> None:
+def delete_batch(sku: str, reference: str, uow: IUnitOfWork) -> None:
+    product = get_product(sku=sku, uow=uow)
     with uow:
-        batch = uow.batches.get(reference=reference)
-        if not batch:
-            raise InvalidBatchReference(f"Invalid batch reference {reference}")
-        uow.batches.delete(batch.reference)
+        product.delete_batch(reference=reference)
         uow.commit()

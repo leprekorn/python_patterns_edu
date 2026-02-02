@@ -1,4 +1,4 @@
-from allocation.domain.model import Batch
+from allocation.domain.model import Product
 from typing import Protocol, Optional, List
 
 
@@ -33,22 +33,22 @@ class IRepository(Protocol):
     Interface for any ORM and storage
     """
 
-    def add(self, batch: Batch):
+    def add(self, product: Product):
         raise NotImplementedError
 
-    def get(self, reference: str) -> Optional[Batch]:
+    def get(self, sku: str) -> Optional[Product]:
         raise NotImplementedError
 
-    def list(self) -> List[Batch]:
+    def list(self) -> List[Product]:
         raise NotImplementedError
 
-    def delete(self, reference: str):
+    def delete(self, sku: str):
         raise NotImplementedError
 
 
 class IUnitOfWork(Protocol):
     session_factory: ICallableSession
-    batches: IRepository
+    products: IRepository
 
     def __enter__(self) -> "IUnitOfWork":
         return self

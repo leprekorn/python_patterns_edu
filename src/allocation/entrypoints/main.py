@@ -33,9 +33,9 @@ def add_batch(payload: AddBatchRequest):
 
 
 @app.delete("/batches/{batchref}", status_code=204)
-def delete_batch(batchref: str):
+def delete_batch(sku: str, batchref: str):
     try:
-        services.delete_batch(reference=batchref, uow=uow)
+        services.delete_batch(sku=sku, reference=batchref, uow=uow)
     except InvalidBatchReference as e:
         raise HTTPException(status_code=404, detail=str(e))
 
@@ -44,20 +44,19 @@ def delete_batch(batchref: str):
 def deallocate(payload: DeallocateRequest):
     try:
         batch_ref = services.deallocate(
-            batchref=payload.batchref,
+            sku=payload.sku,
             orderId=payload.orderid,
+            qty=payload.qty,
             uow=uow,
         )
         return {"batchref": batch_ref}
-    except InvalidBatchReference as e:
-        raise HTTPException(status_code=404, detail=str(e))
     except UnallocatedLine as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/batches/{batchref}")
-def get(batchref: str):
-    batch = uow.batches.get(reference=batchref)
+def get(sku: str, batchref: str):
+    batch = services.get_batch(sku=sku, reference=batchref, uow=uow)
     if not batch:
         raise HTTPException(status_code=404, detail=f"Batch {batchref} not found")
     return {

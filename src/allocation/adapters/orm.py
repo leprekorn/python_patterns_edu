@@ -1,6 +1,6 @@
 from sqlalchemy import Table, Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import registry, relationship
-from allocation.domain.model import OrderLine, Batch
+from allocation.domain.model import OrderLine, Batch, Product
 
 mapper_registry = registry()
 metadata = mapper_registry.metadata
@@ -14,12 +14,18 @@ order_lines = Table(
     Column("orderId", String(255)),
 )
 
+products = Table(
+    "products",
+    metadata,
+    Column("sku", String(255), primary_key=True),
+)
+
 batches = Table(
     "batches",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("reference", String(255)),
-    Column("sku", String(255)),
+    Column("sku", ForeignKey("products.sku")),
     Column("_purchase_quantity", Integer, nullable=False),
     Column("eta", Date, nullable=True),
 )
@@ -47,4 +53,10 @@ def start_mappers() -> None:
                 backref="batches",
             )
         },
+    )
+
+    mapper_registry.map_imperatively(
+        Product,
+        products,
+        properties={"batches": relationship(Batch, backref="product", cascade="all, delete-orphan")},
     )
