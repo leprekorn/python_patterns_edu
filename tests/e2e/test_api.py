@@ -27,37 +27,55 @@ url = config.get_api_url()
 @pytest.mark.api
 @pytest.mark.usefixtures("restart_api")
 def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
-    sku = random_sku(name="first")
-    othersku = random_sku(name="other")
-    earlybatch = random_batchref(name="1")
-    laterbatch = random_batchref(name="2")
-    otherbatch = random_batchref(name="3")
+    earlybatch = {
+        "reference": random_batchref(name="early"),
+        "sku": random_sku(name="RETRO-CLOCK"),
+        "qty": 100,
+        "eta": "2026-02-02",
+    }
+
+    laterbatch = {
+        "reference": random_batchref(name="later"),
+        "sku": earlybatch["sku"],
+        "qty": 100,
+        "eta": "2026-02-03",
+    }
+
+    otherbatch = {
+        "reference": random_batchref(name="other"),
+        "sku": random_sku(name="ANOTHER-ITEM"),
+        "qty": 100,
+        "eta": None,
+    }
+
     for batch in (earlybatch, laterbatch, otherbatch):
         data = {
-            "reference": batch,
-            "sku": sku if batch != otherbatch else othersku,
-            "qty": 100,
-            "eta": "2011-01-01" if batch == earlybatch else "2011-01-02" if batch == laterbatch else None,
+            "reference": batch["reference"],
+            "sku": batch["sku"],
+            "qty": batch["qty"],
+            "eta": batch["eta"],
         }
         r = fastapi_test_client.post(f"{url}/batches/", json=data)
         assert r.status_code == 201
-    r = fastapi_test_client.get(f"{url}/batches/{earlybatch}")
+    r = fastapi_test_client.get(f"{url}/batches/{earlybatch['reference']}?sku={earlybatch['sku']}")
     assert r.status_code == 200
-    assert r.json()["reference"] == earlybatch, f"expected batch reference to be {earlybatch}, but got {r.json()['reference']}"
+    assert r.json()["reference"] == earlybatch["reference"], (
+        f"expected batch reference to be {earlybatch['reference']}, but got {r.json()['reference']}"
+    )
 
-    allocate_data = {"orderid": random_orderid(), "sku": sku, "qty": 3}
+    allocate_data = {"orderid": random_orderid(), "sku": earlybatch["sku"], "qty": 3}
     r = fastapi_test_client.post(f"{url}/allocate", json=allocate_data)
 
     assert r.status_code == 201
-    assert r.json()["batchref"] == earlybatch
+    assert r.json()["batchref"] == earlybatch["reference"]
 
-    deallocate_data = {"batchref": earlybatch, "orderid": allocate_data["orderid"]}
+    deallocate_data = {"sku": earlybatch["sku"], "orderid": allocate_data["orderid"], "qty": 3}
     deallocated_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
     assert deallocated_request.status_code == 200
-    assert deallocated_request.json()["batchref"] == earlybatch
+    assert deallocated_request.json()["batchref"] == earlybatch["reference"]
 
     for batch in (earlybatch, laterbatch, otherbatch):
-        delete_response = fastapi_test_client.delete(f"{url}/batches/{batch}")
+        delete_response = fastapi_test_client.delete(f"{url}/batches/{batch['reference']}?sku={batch['sku']}")
         assert delete_response.status_code == 204
 
 
@@ -66,15 +84,16 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
 @pytest.mark.usefixtures("restart_api")
 def test_unhappy_path_get_for_abcent_batch(fastapi_test_client):
     batchref = random_batchref(name="absent-get-test")
-    r = fastapi_test_client.get(f"{url}/batches/{batchref}")
+    sku = random_sku(name="absent-sku")
+    r = fastapi_test_client.get(f"{url}/batches/{batchref}?sku={sku}")
     assert r.status_code == 404
     assert r.json()["detail"] == f"Batch {batchref} not found"
 
     orderid = random_orderid()
-    deallocate_data = {"batchref": batchref, "orderid": orderid}
+    deallocate_data = {"sku": sku, "orderid": orderid, "qty": 10}
     deallocate_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
-    assert deallocate_request.status_code == 404
-    assert deallocate_request.json()["detail"] == f"Invalid batch reference {batchref}"
+    assert deallocate_request.status_code == 400
+    assert "not allocated" in deallocate_request.json()["detail"]
 
 
 @pytest.mark.e2e
@@ -106,10 +125,10 @@ def test_unhappy_path_post_deallocate_for_unallocated_pair_returns_400_and_error
 
     r = fastapi_test_client.post(f"{url}/batches/", json=data)
     assert r.status_code == 201
-    deallocate_data = {"batchref": batchref, "orderid": order_id}
+    deallocate_data = {"sku": sku, "orderid": order_id, "qty": 50}
     r = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
     assert r.status_code == 400
-    assert r.json()["detail"] == f"Order line {order_id} is not allocated to batch {batchref}"
+    assert "not allocated" in r.json()["detail"]
 
-    delete = fastapi_test_client.delete(f"{url}/batches/{batchref}")
+    delete = fastapi_test_client.delete(f"{url}/batches/{batchref}?sku={sku}")
     assert delete.status_code == 204
