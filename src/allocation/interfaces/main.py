@@ -19,7 +19,13 @@ class ISession(Protocol):
     def add(self, instance):
         raise NotImplementedError
 
+    def delete(self, instance):
+        raise NotImplementedError
+
     def query(self, model_class):
+        raise NotImplementedError
+
+    def execute(self, statement, params=None):
         raise NotImplementedError
 
 

@@ -1,29 +1,21 @@
 from allocation.domain import model
 from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
 from sqlalchemy import text
-from typing import Optional
-from datetime import date
 import pytest
 
 
-def insert_batch(session, ref: str, sku: str, qty: int, eta: Optional[date]):
-    session.execute(
-        text("INSERT INTO products (sku) VALUES (:sku)"),
-        dict(sku=sku),
-    )
-
-    session.execute(
-        text("INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES (:ref, :sku, :_purchase_quantity, :eta)"),
-        dict(ref=ref, sku=sku, _purchase_quantity=qty, eta=eta),
-    )
-
-
-def test_uow_can_get_batch_and_allocate_to_it(session_factory):
+def test_uow_can_get_batch_and_allocate_to_it(session_factory, insert_batch_via_session):
     sku = "HIPSTER-WORKBENCH"
     orderId = "order1"
     batchRef = "batch1"
     session = session_factory()
-    insert_batch(session=session, ref=batchRef, sku=sku, qty=100, eta=None)
+    insert_batch_via_session(
+        session=session,
+        ref=batchRef,
+        sku=sku,
+        qty=100,
+        eta=None,
+    )
     session.commit()
 
     uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
@@ -47,24 +39,36 @@ def test_uow_can_get_batch_and_allocate_to_it(session_factory):
     assert allocated_batch_ref == batchRef
 
 
-def test_rolls_back_uncommitted_work_by_default(session_factory):
+def test_rolls_back_uncommitted_work_by_default(session_factory, insert_batch_via_session):
     uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
     with uow:
-        insert_batch(uow.session, "batch1", "MEDIUM-PLINTH", 100, None)
+        insert_batch_via_session(
+            session=uow.session,
+            ref="batch1",
+            sku="MEDIUM-PLINTH",
+            qty=100,
+            eta=None,
+        )
 
     new_session = session_factory()
     rows = list(new_session.execute(text("SELECT * FROM batches")))
     assert rows == []
 
 
-def test_rolls_back_on_error(session_factory):
+def test_rolls_back_on_error(session_factory, insert_batch_via_session):
     class MyException(Exception):
         pass
 
     uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
     with pytest.raises(MyException):
         with uow:
-            insert_batch(uow.session, "batch1", "LARGE-FORK", 100, None)
+            insert_batch_via_session(
+                session=uow.session,
+                ref="batch1",
+                sku="LARGE-FORK",
+                qty=100,
+                eta=None,
+            )
             raise MyException()
 
     new_session = session_factory()

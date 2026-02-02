@@ -16,5 +16,9 @@ class SQLAlchemyRepository(IRepository):
     def list(self) -> List[Product]:
         return self.orm_session.query(Product).all()
 
-    def delete(self, sku: str):
-        return self.orm_session.query(Product).filter_by(sku=sku).delete()
+    def delete(self, sku: str) -> int:
+        product = self.orm_session.query(Product).filter_by(sku=sku).first()
+        if not product:
+            return 0
+        self.orm_session.delete(product)
+        return 1

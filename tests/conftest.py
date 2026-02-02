@@ -6,7 +6,7 @@ from allocation.entrypoints.main import app
 from datetime import date
 from typing import Callable, Tuple, Optional
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, clear_mappers
 from sqlalchemy.pool import StaticPool
 from fastapi.testclient import TestClient
@@ -77,6 +77,34 @@ def make_batch_and_line() -> Callable[..., Tuple[Batch, OrderLine]]:
         batch = Batch(ref=batch_ref, sku=batch_sku, qty=batch_qty, eta=batch_eta)
         line = OrderLine(orderId=orderId, sku=line_sku, qty=line_qty)
         return batch, line
+
+    return _make
+
+
+@pytest.fixture(scope="function")
+def insert_batch_via_session() -> Callable[[ISession, str, str, int, date | None], int]:
+    def _make(
+        session: ISession,
+        ref: str,
+        sku: str,
+        qty: int,
+        eta: Optional[date],
+    ) -> int:
+        session.execute(
+            text("INSERT INTO products (sku) VALUES (:sku)"),
+            dict(sku=sku),
+        )
+
+        session.execute(
+            text("INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES (:ref, :sku, :_purchase_quantity, :eta)"),
+            dict(ref=ref, sku=sku, _purchase_quantity=qty, eta=eta),
+        )
+
+        [[batch_id]] = session.execute(
+            text("SELECT id FROM batches WHERE reference=:ref AND sku=:sku"),
+            dict(ref=ref, sku=sku),
+        )
+        return batch_id
 
     return _make
 
