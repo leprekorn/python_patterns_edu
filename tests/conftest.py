@@ -166,3 +166,14 @@ def fastapi_test_client():
     client = TestClient(app)
     yield client
     clear_mappers()
+    truncate_queries = (
+        "truncate table products CASCADE;",
+        "truncate table allocations CASCADE;",
+        "truncate table batches CASCADE;",
+        "truncate table order_lines CASCADE;",
+    )
+
+    engine = create_engine(url=config.get_db_uri())
+    with engine.begin() as conn:
+        for truncate_query in truncate_queries:
+            conn.execute(text(truncate_query))

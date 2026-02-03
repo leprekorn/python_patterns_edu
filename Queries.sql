@@ -7,6 +7,6 @@ select * from order_lines;
 
 -- Manual cleaning
 truncate table products CASCADE;
-truncate table allocations;
+truncate table allocations CASCADE;
 truncate table batches CASCADE;
 truncate table order_lines CASCADE;
