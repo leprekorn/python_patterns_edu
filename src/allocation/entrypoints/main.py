@@ -60,5 +60,10 @@ def deallocate(payload: DeallocateRequest):
 
 @app.get("/batches/{batchref}")
 def get(sku: str, batchref: str):
-    batch_data = services.get_batch(sku=sku, reference=batchref, uow=uow)
-    return batch_data
+    try:
+        batch_data = services.get_batch(sku=sku, reference=batchref, uow=uow)
+        return batch_data
+    except InvalidSku as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except InvalidBatchReference as e:
+        raise HTTPException(status_code=404, detail=str(e))

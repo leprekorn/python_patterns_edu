@@ -82,18 +82,36 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
 @pytest.mark.e2e
 @pytest.mark.api
 @pytest.mark.usefixtures("restart_api")
-def test_unhappy_path_get_for_abcent_batch(fastapi_test_client):
+def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
     batchref = random_batchref(name="absent-get-test")
     sku = random_sku(name="absent-sku")
     r = fastapi_test_client.get(f"{url}/batches/{batchref}?sku={sku}")
-    assert r.status_code == 404
-    assert r.json()["detail"] == f"Batch {batchref} not found"
+    assert r.status_code == 400
+    assert r.json()["detail"] == f"Invalid sku {sku}"
 
     orderid = random_orderid()
     deallocate_data = {"sku": sku, "orderid": orderid, "qty": 10}
-    deallocate_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
-    assert deallocate_request.status_code == 400
-    assert "not allocated" in deallocate_request.json()["detail"]
+    deallocate_from_abcent_product_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
+    assert deallocate_from_abcent_product_request.json()["detail"] == f"Invalid sku {sku}"
+    assert deallocate_from_abcent_product_request.status_code == 400
+
+    post_data = {
+        "reference": batchref,
+        "sku": sku,
+        "qty": 100,
+        "eta": "2026-01-21",
+    }
+    r = fastapi_test_client.post(f"{url}/batches/", json=post_data)
+    assert r.status_code == 201
+
+    deallocate_from_existing_product_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
+    assert deallocate_from_existing_product_request.status_code == 400
+    assert (
+        deallocate_from_existing_product_request.json()["detail"] == f"Order line {orderid} is not allocated to any batch in Product {sku}"
+    )
+
+    delete_batch_request = fastapi_test_client.delete(f"{url}/batches/{batchref}?sku={sku}")
+    assert delete_batch_request.status_code == 204
 
 
 @pytest.mark.e2e
@@ -105,30 +123,3 @@ def test_unhappy_path_post_allocate_returns_400_and_error_message(fastapi_test_c
     r = fastapi_test_client.post(f"{url}/allocate", json=data)
     assert r.status_code == 400
     assert r.json()["detail"] == f"Invalid sku {unknown_sku}"
-
-
-@pytest.mark.e2e
-@pytest.mark.api
-@pytest.mark.usefixtures("restart_api")
-def test_unhappy_path_post_deallocate_for_unallocated_pair_returns_400_and_error_message(fastapi_test_client):
-    sku = random_sku(name="cool_table")
-    order_id = random_orderid(name="dealloc-test")
-    batchref = random_batchref(name="15")
-    data = {
-        "reference": batchref,
-        "sku": sku,
-        "qty": 100,
-        "eta": "2026-01-21",
-    }
-    delete_abcent = fastapi_test_client.delete(f"{url}/batches/{batchref}")
-    assert delete_abcent.status_code == 404
-
-    r = fastapi_test_client.post(f"{url}/batches/", json=data)
-    assert r.status_code == 201
-    deallocate_data = {"sku": sku, "orderid": order_id, "qty": 50}
-    r = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
-    assert r.status_code == 400
-    assert "not allocated" in r.json()["detail"]
-
-    delete = fastapi_test_client.delete(f"{url}/batches/{batchref}?sku={sku}")
-    assert delete.status_code == 204
