@@ -192,5 +192,15 @@ def postgres_db():
 def postgres_session_factory(postgres_db):
     clear_mappers()
     start_mappers()
-    yield sessionmaker(bind=postgres_db)
+    engine = postgres_db
+    yield sessionmaker(bind=engine)
     clear_mappers()
+    truncate_queries = (
+        "truncate table products CASCADE;",
+        "truncate table allocations CASCADE;",
+        "truncate table batches CASCADE;",
+        "truncate table order_lines CASCADE;",
+    )
+    with engine.begin() as conn:
+        for truncate_query in truncate_queries:
+            conn.execute(text(truncate_query))
