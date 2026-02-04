@@ -1,4 +1,4 @@
-import time
+import threading
 import traceback
 from allocation.domain import model
 from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
@@ -35,7 +35,7 @@ def test_uow_can_get_batch_and_allocate_to_it(session_factory, insert_batch_via_
         uow.commit()
 
     orderLine_id = session.execute(
-        text("SELECT id FROM order_lines WHERE orderid=:orderid AND sku=:sku"),
+        text('SELECT id FROM order_lines WHERE "orderId" = :orderid AND sku = :sku'),
         dict(orderid=orderId, sku=sku),
     ).scalar_one()
 
@@ -88,14 +88,14 @@ def test_rolls_back_on_error(session_factory, insert_batch_via_session):
     assert rows == []
 
 
-def __try_to_allocate(sku: str, line: model.OrderLine, exceptions: List[Exception], session_factory):
+def __try_to_allocate(sku: str, line: model.OrderLine, exceptions: List[Exception], session_factory, barrier: threading.Barrier):
     try:
         uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
         with uow:
             product = uow.products.get(sku=sku)
             assert product is not None
             product.allocate(line)
-            time.sleep(0.2)
+            barrier.wait()
             uow.commit()
     except Exception as e:
         print(traceback.format_exc())
@@ -108,7 +108,8 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
     sku = random_sku(name="CONCURRENT-TEST-SOFA")
     batchref = random_batchref(name="BATCH-001")
     session = postgres_session_factory()
-    insert_batch_via_session(
+
+    batch1_id = insert_batch_via_session(
         session=session,
         ref=batchref,
         sku=sku,
@@ -121,10 +122,11 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
     line1 = model.OrderLine(orderId=order1, sku=sku, qty=12)
     line2 = model.OrderLine(orderId=order2, sku=sku, qty=30)
     exceptions = []
+    barrier = threading.Barrier(2)
     with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [
-            executor.submit(__try_to_allocate, sku, line1, exceptions, postgres_session_factory),
-            executor.submit(__try_to_allocate, sku, line2, exceptions, postgres_session_factory),
+            executor.submit(__try_to_allocate, sku, line1, exceptions, postgres_session_factory, barrier),
+            executor.submit(__try_to_allocate, sku, line2, exceptions, postgres_session_factory, barrier),
         ]
         for future in futures:
             future.result()
@@ -132,11 +134,30 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
     [exception] = exceptions
     assert isinstance(exception, StaleDataError) or "could not serialize access due to concurrent update" in str(exception)
 
-    uow = SqlAlchemyUnitOfWork(session_factory=postgres_session_factory)
-    with uow:
-        product = uow.products.get(sku=sku)
-        assert product is not None
-        assert product.version_number == 1
-        batch_obj = product.get_batch(reference=batchref)
-        assert batch_obj is not None
-        assert batch_obj._allocations == {model.OrderLine(orderId=order1, sku=sku, qty=12)}
+    # use a fresh session for verification to avoid reusing a connection
+    verify_session = postgres_session_factory()
+    try:
+        product_version = verify_session.execute(
+            text("SELECT version_number FROM products WHERE sku = :sku"),
+            dict(sku=sku),
+        ).scalar_one()
+        assert product_version == 1
+
+        orderline_id = verify_session.execute(
+            text('SELECT id FROM order_lines WHERE "orderId" = :orderid AND sku = :sku'),
+            dict(orderid=order1, sku=sku),
+        ).scalar_one()
+
+        allocations = (
+            verify_session.execute(
+                text("SELECT orderline_id FROM allocations WHERE batch_id = :batch_id"),
+                dict(batch_id=batch1_id),
+            )
+            .scalars()
+            .all()
+        )
+
+        assert len(allocations) == 1
+        assert allocations[0] == orderline_id
+    finally:
+        verify_session.close()

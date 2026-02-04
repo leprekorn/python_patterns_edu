@@ -59,7 +59,7 @@ class IUnitOfWork(Protocol):
     def __enter__(self) -> "IUnitOfWork":
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.rollback()
 
     def commit(self):

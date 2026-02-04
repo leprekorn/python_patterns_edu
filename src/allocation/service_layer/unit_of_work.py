@@ -22,9 +22,11 @@ class SqlAlchemyUnitOfWork(IUnitOfWork):
         self.products = SQLAlchemyRepository(self.session)
         return super().__enter__()
 
-    def __exit__(self, *args):
-        super().__exit__(*args)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None:
+            self.rollback()
         self.session.close()
+        return super().__exit__(exc_type, exc_val, exc_tb)
 
     def commit(self):
         self.session.commit()
