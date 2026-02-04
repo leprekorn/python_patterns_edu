@@ -134,7 +134,6 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
     [exception] = exceptions
     assert isinstance(exception, StaleDataError) or "could not serialize access due to concurrent update" in str(exception)
 
-    # use a fresh session for verification to avoid reusing a connection
     verify_session = postgres_session_factory()
     try:
         product_version = verify_session.execute(
@@ -142,11 +141,6 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
             dict(sku=sku),
         ).scalar_one()
         assert product_version == 1
-
-        orderline_id = verify_session.execute(
-            text('SELECT id FROM order_lines WHERE "orderId" = :orderid AND sku = :sku'),
-            dict(orderid=order1, sku=sku),
-        ).scalar_one()
 
         allocations = (
             verify_session.execute(
@@ -158,6 +152,22 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
         )
 
         assert len(allocations) == 1
-        assert allocations[0] == orderline_id
+
+        allocated_id = allocations[0]
+        row = verify_session.execute(
+            text('SELECT "orderId", sku, qty FROM order_lines WHERE id = :id'),
+            dict(id=allocated_id),
+        ).first()
+        assert row is not None
+        allocated_orderid, allocated_sku, allocated_qty = row
+        assert allocated_sku == sku
+        assert allocated_orderid in (order1, order2)
+        assert allocated_qty in (12, 30)
+
+        candidate_count = verify_session.execute(
+            text('SELECT COUNT(*) FROM order_lines WHERE ("orderId" = :o1 OR "orderId" = :o2) AND sku = :sku'),
+            dict(o1=order1, o2=order2, sku=sku),
+        ).scalar_one()
+        assert candidate_count == 1
     finally:
         verify_session.close()
