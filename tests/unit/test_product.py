@@ -140,3 +140,11 @@ def test_raises_out_of_stock_exception_if_cannot_allocate(make_batch_and_line):
     extra_order = OrderLine(orderId="extra_oder", sku="SMALL-FORK", qty=10)
     with pytest.raises(OutOfStock, match="SMALL-FORK"):
         product.allocate(line=extra_order)
+
+
+@pytest.mark.unit
+def test_increments_version_number():
+    line = OrderLine("oref", "SCANDI-PEN", 10)
+    product = Product(sku="SCANDI-PEN", batches=[Batch("b1", "SCANDI-PEN", 100, eta=None)], version_number=7)
+    product.allocate(line)
+    assert product.version_number == 8

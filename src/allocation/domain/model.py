@@ -75,14 +75,16 @@ class Batch:
 
 
 class Product:
-    def __init__(self, sku: str, batches: Optional[List[Batch]] = None):
+    def __init__(self, sku: str, batches: Optional[List[Batch]] = None, version_number: int = 0):
         self.sku = sku
         self.batches = batches or []
+        self.version_number = version_number
 
     def allocate(self, line: OrderLine) -> Batch:
         try:
             batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
             batch.allocate(line)
+            self.version_number += 1
         except StopIteration:
             raise OutOfStock(f"There is no batch with sku: {line.sku} available")
         return batch

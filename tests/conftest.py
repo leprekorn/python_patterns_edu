@@ -177,3 +177,20 @@ def fastapi_test_client():
     with engine.begin() as conn:
         for truncate_query in truncate_queries:
             conn.execute(text(truncate_query))
+    engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def postgres_db():
+    engine = create_engine(url=config.get_db_uri())
+    metadata.create_all(engine)
+    yield engine
+    engine.dispose()
+
+
+@pytest.fixture
+def postgres_session_factory(postgres_db):
+    clear_mappers()
+    start_mappers()
+    yield sessionmaker(bind=postgres_db)
+    clear_mappers()

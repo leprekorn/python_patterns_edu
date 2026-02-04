@@ -53,6 +53,7 @@ markers = [
     "e2e: test that run on on e2e mode, using database and API endpoints",
     "api: test REST API endpoints",
     "service: test for service layer",
+    "uow: tests for Unit of Work",
 ]
 
 addopts = [

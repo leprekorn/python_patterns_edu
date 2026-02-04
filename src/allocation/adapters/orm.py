@@ -18,6 +18,7 @@ products = Table(
     "products",
     metadata,
     Column("sku", String(255), primary_key=True),
+    Column("version_number", Integer, nullable=False, server_default="0"),
 )
 
 batches = Table(
@@ -68,4 +69,5 @@ def start_mappers() -> None:
             )
         },
         primary_key=[products.c.sku],
+        version_id_col=products.c.version_number,
     )

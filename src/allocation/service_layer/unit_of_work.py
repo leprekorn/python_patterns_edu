@@ -5,7 +5,12 @@ from allocation.interfaces.main import IUnitOfWork
 from allocation.adapters.repository import SQLAlchemyRepository
 
 
-DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(url=config.get_db_uri()))
+DEFAULT_SESSION_FACTORY = sessionmaker(
+    bind=create_engine(
+        url=config.get_db_uri(),
+        isolation_level="REPEATABLE READ",
+    )
+)
 
 
 class SqlAlchemyUnitOfWork(IUnitOfWork):
