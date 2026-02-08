@@ -1,6 +1,6 @@
 import pytest
 from allocation.domain.model import Batch, OrderLine, Product
-from allocation.domain.exceptions import OutOfStock
+from allocation.domain import exceptions, events
 import datetime
 
 today = datetime.date.today()
@@ -138,7 +138,7 @@ def test_raises_out_of_stock_exception_if_cannot_allocate(make_batch_and_line):
     product.allocate(line=line)
 
     extra_order = OrderLine(orderId="extra_oder", sku="SMALL-FORK", qty=10)
-    with pytest.raises(OutOfStock, match="SMALL-FORK"):
+    with pytest.raises(exceptions.OutOfStock, match="SMALL-FORK"):
         product.allocate(line=extra_order)
 
 
@@ -148,3 +148,14 @@ def test_increments_version_number():
     product = Product(sku="SCANDI-PEN", batches=[Batch("b1", "SCANDI-PEN", 100, eta=None)], version_number=7)
     product.allocate(line)
     assert product.version_number == 8
+
+
+@pytest.mark.unit
+def test_records_out_of_stock_event_if_cannot_allocate():
+    sku1_batch = Batch("batch1", "sku1", 100, eta=today)
+    sku2_line = OrderLine("oref", "sku2", 10)
+    product = Product(sku="sku1", batches=[sku1_batch])
+
+    with pytest.raises(exceptions.OutOfStock):
+        product.allocate(sku2_line)
+    assert product.events[-1] == events.OutOfStock(sku="sku2")

@@ -1,5 +1,5 @@
 from allocation.domain import model
-from allocation.domain.exceptions import InvalidSku
+from allocation.domain.exceptions import InvalidSku, InvalidBatchReference
 from allocation.service_layer.unit_of_work import IUnitOfWork
 from typing import Optional
 from datetime import date
@@ -13,7 +13,7 @@ def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
 
         batch = product.get_batch(reference=reference)
         if not batch:
-            raise model.InvalidBatchReference(f"Batch {reference} not found")
+            raise InvalidBatchReference(f"Batch {reference} not found")
         return {
             "reference": batch.reference,
             "sku": batch.sku,

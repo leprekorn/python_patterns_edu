@@ -19,6 +19,14 @@ from allocation.interfaces.main import IRepository, ISession, IUnitOfWork
 from typing import List, Generator
 
 
+TRUNCATE_QUERIES = (
+    "truncate table products CASCADE;",
+    "truncate table allocations CASCADE;",
+    "truncate table batches CASCADE;",
+    "truncate table order_lines CASCADE;",
+)
+
+
 class FakeUnitOfWork(IUnitOfWork):
     def __init__(self, session_factory: Callable[[], ISession]):
         self.session_factory = session_factory
@@ -166,16 +174,9 @@ def fastapi_test_client():
     client = TestClient(app)
     yield client
     clear_mappers()
-    truncate_queries = (
-        "truncate table products CASCADE;",
-        "truncate table allocations CASCADE;",
-        "truncate table batches CASCADE;",
-        "truncate table order_lines CASCADE;",
-    )
-
     engine = create_engine(url=config.get_db_uri())
     with engine.begin() as conn:
-        for truncate_query in truncate_queries:
+        for truncate_query in TRUNCATE_QUERIES:
             conn.execute(text(truncate_query))
     engine.dispose()
 
@@ -195,12 +196,6 @@ def postgres_session_factory(postgres_db):
     engine = postgres_db
     yield sessionmaker(bind=engine)
     clear_mappers()
-    truncate_queries = (
-        "truncate table products CASCADE;",
-        "truncate table allocations CASCADE;",
-        "truncate table batches CASCADE;",
-        "truncate table order_lines CASCADE;",
-    )
     with engine.begin() as conn:
-        for truncate_query in truncate_queries:
+        for truncate_query in TRUNCATE_QUERIES:
             conn.execute(text(truncate_query))
