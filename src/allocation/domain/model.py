@@ -81,14 +81,14 @@ class Product:
         self.version_number = version_number
         self.events: List[events.Event] = []
 
-    def allocate(self, line: OrderLine) -> Batch:
+    def allocate(self, line: OrderLine) -> Optional[Batch]:
         try:
             batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
             batch.allocate(line)
             self.version_number += 1
         except StopIteration:
             self.events.append(events.OutOfStock(sku=line.sku))
-            raise exceptions.OutOfStock(f"There is no batch with sku: {line.sku} available")
+            return None
         return batch
 
     def deallocate(self, line: OrderLine) -> str:

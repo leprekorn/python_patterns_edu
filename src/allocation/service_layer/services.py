@@ -29,6 +29,8 @@ def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> str:
         if not product:
             raise InvalidSku(f"Invalid sku {sku}")
         batch = product.allocate(line=line)
+        if batch is None:
+            raise model.exceptions.OutOfStock(f"Out of stock for sku {sku}")
         uow.commit()
         return batch.reference
 
