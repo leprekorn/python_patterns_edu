@@ -3,6 +3,7 @@ from allocation.domain.exceptions import InvalidSku, InvalidBatchReference
 from allocation.service_layer.unit_of_work import IUnitOfWork
 from typing import Optional
 from datetime import date
+from allocation.adapters.email import send_email
 
 
 def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
@@ -30,6 +31,7 @@ def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> str:
             raise InvalidSku(f"Invalid sku {sku}")
         batch = product.allocate(line=line)
         if batch is None:
+            send_email("stock@made.com", f"Out of stock for sku {sku}")
             raise model.exceptions.OutOfStock(f"Out of stock for sku {sku}")
         uow.commit()
         return batch.reference
