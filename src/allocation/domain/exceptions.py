@@ -10,12 +10,6 @@ class DeallocationError(Exception):
     pass
 
 
-class OutOfStock(AllocationError):
-    """Raised when no batch with matching SKU has available quantity."""
-
-    pass
-
-
 class InvalidSku(AllocationError):
     """Raised when invalid SKU passed."""
 

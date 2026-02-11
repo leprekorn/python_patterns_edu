@@ -1,10 +1,11 @@
-from allocation.domain.exceptions import OutOfStock, InvalidBatchReference, UnallocatedLine, InvalidSku
-from allocation.adapters import orm
-from allocation.service_layer import services, unit_of_work
+from datetime import datetime
+
 from fastapi import FastAPI, HTTPException
 
-from allocation.entrypoints.schemas import AllocateRequest, DeallocateRequest, AddBatchRequest
-from datetime import datetime
+from allocation.adapters import orm
+from allocation.domain.exceptions import InvalidBatchReference, InvalidSku, UnallocatedLine
+from allocation.entrypoints.schemas import AddBatchRequest, AllocateRequest, DeallocateRequest
+from allocation.service_layer import services, unit_of_work
 
 orm.start_mappers()
 app = FastAPI()
@@ -19,7 +20,7 @@ def allocate(payload: AllocateRequest):
     try:
         batch_ref = services.allocate(orderId=orderId, sku=sku, qty=qty, uow=uow)
         return {"batchref": batch_ref}
-    except (OutOfStock, services.InvalidSku) as e:
+    except services.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
