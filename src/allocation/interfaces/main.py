@@ -1,5 +1,5 @@
 from allocation.domain.model import Product
-from typing import Protocol, Optional, List
+from typing import Protocol, Optional, List, Set
 
 
 class ISession(Protocol):
@@ -39,6 +39,8 @@ class IRepository(Protocol):
     Interface for any ORM and storage
     """
 
+    seen: Set[Product]
+
     def add(self, product: Product):
         raise NotImplementedError
 
@@ -66,4 +68,7 @@ class IUnitOfWork(Protocol):
         raise NotImplementedError
 
     def rollback(self):
+        raise NotImplementedError
+
+    def publish_events(self):
         raise NotImplementedError

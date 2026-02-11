@@ -1,6 +1,7 @@
-from sqlalchemy import Table, Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Date, ForeignKey, Integer, String, Table, event
 from sqlalchemy.orm import registry, relationship
-from allocation.domain.model import OrderLine, Batch, Product
+
+from allocation.domain.model import Batch, OrderLine, Product
 
 mapper_registry = registry()
 metadata = mapper_registry.metadata
@@ -71,3 +72,8 @@ def start_mappers() -> None:
         primary_key=[products.c.sku],
         version_id_col=products.c.version_number,
     )
+
+
+@event.listens_for(Product, "load")
+def receive_load(product, _):
+    product.events = []

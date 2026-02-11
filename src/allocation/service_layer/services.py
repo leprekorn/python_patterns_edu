@@ -1,9 +1,9 @@
-from allocation.domain import model
-from allocation.domain.exceptions import InvalidSku, InvalidBatchReference
-from allocation.service_layer.unit_of_work import IUnitOfWork
-from typing import Optional
 from datetime import date
-from allocation.adapters.email import send_email
+from typing import Optional
+
+from allocation.domain import model
+from allocation.domain.exceptions import InvalidBatchReference, InvalidSku
+from allocation.service_layer.unit_of_work import IUnitOfWork
 
 
 def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
@@ -23,18 +23,17 @@ def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
         }
 
 
-def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> str:
+def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> Optional[str]:
     line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
     with uow:
         product = uow.products.get(sku=sku)
         if not product:
             raise InvalidSku(f"Invalid sku {sku}")
         batch = product.allocate(line=line)
-        if batch is None:
-            send_email("stock@made.com", f"Out of stock for sku {sku}")
-            raise model.exceptions.OutOfStock(f"Out of stock for sku {sku}")
         uow.commit()
-        return batch.reference
+        if batch:
+            return batch.reference
+        return None
 
 
 def deallocate(sku: str, orderId: str, qty: int, uow: IUnitOfWork) -> str:

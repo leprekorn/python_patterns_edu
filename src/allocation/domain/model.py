@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional, Set, Any, List
 from datetime import date
+from typing import Any, List, Optional, Set
+
 from allocation.domain import events, exceptions
 
 

@@ -1,23 +1,20 @@
-import pytest
-from allocation.domain.model import OrderLine, Product, Batch
-from allocation.adapters.orm import metadata, start_mappers
-from allocation import config
-from allocation.entrypoints.main import app
-from datetime import date
-from typing import Callable, Tuple, Optional
-
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, clear_mappers
-from sqlalchemy.pool import StaticPool
-from fastapi.testclient import TestClient
-
-import time
 import pathlib
+import time
+from datetime import date
+from typing import Callable, Generator, List, Optional, Tuple
+
 import httpx
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import clear_mappers, sessionmaker
+from sqlalchemy.pool import StaticPool
 
+from allocation import config
+from allocation.adapters.orm import metadata, start_mappers
+from allocation.domain.model import Batch, OrderLine, Product
+from allocation.entrypoints.main import app
 from allocation.interfaces.main import IRepository, ISession, IUnitOfWork
-from typing import List, Generator
-
 
 TRUNCATE_QUERIES = (
     "truncate table products CASCADE;",
@@ -43,25 +40,36 @@ class FakeUnitOfWork(IUnitOfWork):
     def rollback(self):
         pass
 
+    def publish_events(self):
+        pass
+
 
 class FakeRepository(IRepository):
     def __init__(self, products: List[Product]):
         self._products = set(products)
+        self.seen = set(products)
 
     def add(self, product: Product):
         self._products.add(product)
+        self.seen.add(product)
 
     def delete(self, sku: str):
         product = self.get(sku=sku)
         if product:
             self._products.remove(product)
+            self.seen.discard(product)
 
     def get(self, sku: str) -> Optional[Product]:
         product = next((b for b in self._products if b.sku == sku), None)
+        if product:
+            self.seen.add(product)
         return product
 
     def list(self):
-        return list(self._products)
+        products = list(self._products)
+        for product in products:
+            self.seen.add(product)
+        return products
 
 
 @pytest.fixture(scope="function")
