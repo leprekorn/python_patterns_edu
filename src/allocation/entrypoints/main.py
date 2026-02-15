@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from allocation.adapters import orm
 from allocation.domain import exceptions
 from allocation.entrypoints.schemas import AddBatchRequest, AllocateRequest, DeallocateRequest
-from allocation.service_layer import services, unit_of_work
+from allocation.service_layer import handlers, unit_of_work
 
 orm.start_mappers()
 app = FastAPI()
@@ -18,7 +18,7 @@ def allocate(payload: AllocateRequest):
     sku = payload.sku
     qty = payload.qty
     try:
-        batch_ref = services.allocate(orderId=orderId, sku=sku, qty=qty, uow=uow)
+        batch_ref = handlers.allocate(orderId=orderId, sku=sku, qty=qty, uow=uow)
         return {"batchref": batch_ref}
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -32,13 +32,13 @@ def add_batch(payload: AddBatchRequest):
     sku = payload.sku
     qty = payload.qty
     eta = None if payload.eta is None else datetime.fromisoformat(payload.eta).date()
-    services.add_batch(reference=reference, sku=sku, qty=qty, eta=eta, uow=uow)
+    handlers.add_batch(reference=reference, sku=sku, qty=qty, eta=eta, uow=uow)
 
 
 @app.delete("/batches/{batchref}", status_code=204)
 def delete_batch(sku: str, batchref: str):
     try:
-        services.delete_batch(sku=sku, reference=batchref, uow=uow)
+        handlers.delete_batch(sku=sku, reference=batchref, uow=uow)
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     except exceptions.InvalidBatchReference as e:
@@ -48,7 +48,7 @@ def delete_batch(sku: str, batchref: str):
 @app.post("/deallocate", status_code=200)
 def deallocate(payload: DeallocateRequest):
     try:
-        batch_ref = services.deallocate(
+        batch_ref = handlers.deallocate(
             sku=payload.sku,
             orderId=payload.orderid,
             qty=payload.qty,
@@ -64,7 +64,7 @@ def deallocate(payload: DeallocateRequest):
 @app.get("/batches/{batchref}")
 def get(sku: str, batchref: str):
     try:
-        batch_data = services.get_batch(sku=sku, reference=batchref, uow=uow)
+        batch_data = handlers.get_batch(sku=sku, reference=batchref, uow=uow)
         return batch_data
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
