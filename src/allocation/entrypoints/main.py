@@ -3,7 +3,7 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException
 
 from allocation.adapters import orm
-from allocation.domain.exceptions import InvalidBatchReference, InvalidSku, UnallocatedLine
+from allocation.domain import exceptions
 from allocation.entrypoints.schemas import AddBatchRequest, AllocateRequest, DeallocateRequest
 from allocation.service_layer import services, unit_of_work
 
@@ -20,7 +20,9 @@ def allocate(payload: AllocateRequest):
     try:
         batch_ref = services.allocate(orderId=orderId, sku=sku, qty=qty, uow=uow)
         return {"batchref": batch_ref}
-    except services.InvalidSku as e:
+    except exceptions.InvalidSku as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except exceptions.UnallocatedLine as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -37,9 +39,9 @@ def add_batch(payload: AddBatchRequest):
 def delete_batch(sku: str, batchref: str):
     try:
         services.delete_batch(sku=sku, reference=batchref, uow=uow)
-    except InvalidSku as e:
+    except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except InvalidBatchReference as e:
+    except exceptions.InvalidBatchReference as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
@@ -53,9 +55,9 @@ def deallocate(payload: DeallocateRequest):
             uow=uow,
         )
         return {"batchref": batch_ref}
-    except InvalidSku as e:
+    except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except UnallocatedLine as e:
+    except exceptions.UnallocatedLine as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -64,7 +66,7 @@ def get(sku: str, batchref: str):
     try:
         batch_data = services.get_batch(sku=sku, reference=batchref, uow=uow)
         return batch_data
-    except InvalidSku as e:
+    except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
-    except InvalidBatchReference as e:
+    except exceptions.InvalidBatchReference as e:
         raise HTTPException(status_code=404, detail=str(e))
