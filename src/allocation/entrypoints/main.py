@@ -3,9 +3,9 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException
 
 from allocation.adapters import orm
-from allocation.domain import exceptions
+from allocation.domain import events, exceptions
 from allocation.entrypoints.schemas import AddBatchRequest, AllocateRequest, DeallocateRequest
-from allocation.service_layer import handlers, unit_of_work
+from allocation.service_layer import handlers, messagebus, unit_of_work
 
 orm.start_mappers()
 app = FastAPI()
@@ -18,7 +18,9 @@ def allocate(payload: AllocateRequest):
     sku = payload.sku
     qty = payload.qty
     try:
-        batch_ref = handlers.allocate(orderId=orderId, sku=sku, qty=qty, uow=uow)
+        event = events.AllocationRequired(orderId=orderId, sku=sku, qty=qty)
+        result = messagebus.handle(event=event, uow=uow)
+        batch_ref = result[0] if result else None
         return {"batchref": batch_ref}
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -32,7 +34,8 @@ def add_batch(payload: AddBatchRequest):
     sku = payload.sku
     qty = payload.qty
     eta = None if payload.eta is None else datetime.fromisoformat(payload.eta).date()
-    handlers.add_batch(reference=reference, sku=sku, qty=qty, eta=eta, uow=uow)
+    event = events.BatchCreated(ref=reference, sku=sku, qty=qty, eta=eta)
+    messagebus.handle(event=event, uow=uow)
 
 
 @app.delete("/batches/{batchref}", status_code=204)

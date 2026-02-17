@@ -22,6 +22,6 @@ class BatchCreated(Event):
 
 @dataclass
 class AllocationRequired(Event):
-    orderid: str
+    orderId: str
     sku: str
     qty: int

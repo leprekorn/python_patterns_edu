@@ -1,20 +1,19 @@
-from allocation.adapters.email import send_email
+from typing import Callable, Dict, List, Type
+
 from allocation.domain import events
-from typing import List, Dict, Callable, Type
+from allocation.interfaces.main import IUnitOfWork
+from allocation.service_layer import handlers
 
 
-def handle(event: events.Event):
+def handle(event: events.Event, uow: IUnitOfWork):
+    results = []
     for handler in HANDLERS[type(event)]:
-        handler(event)
-
-
-def send_out_of_stock_notification(event: events.OutOfStock):
-    send_email(
-        "stock@made.com",
-        f"Out of stock for {event.sku}",
-    )
+        results.append(handler(event=event, uow=uow))
+    return results
 
 
 HANDLERS: Dict[Type[events.Event], List[Callable]] = {
-    events.OutOfStock: [send_out_of_stock_notification],
+    events.AllocationRequired: [handlers.allocate],
+    events.BatchCreated: [handlers.add_batch],
+    events.OutOfStock: [handlers.send_out_of_stock_notification],
 }
