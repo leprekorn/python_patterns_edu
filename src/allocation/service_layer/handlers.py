@@ -77,8 +77,7 @@ def delete_batch(sku: str, reference: str, uow: IUnitOfWork) -> None:
 
 
 def send_out_of_stock_notification(event: events.OutOfStock, uow: IUnitOfWork) -> None:
-    with uow:
-        email.send_email(
-            "stock@made.com",
-            f"Out of stock for {event.sku}",
-        )
+    email.send_email(
+        "stock@made.com",
+        f"Out of stock for {event.sku}",
+    )
