@@ -3,6 +3,7 @@ import pytest
 from allocation.domain import events
 from allocation.domain.exceptions import InvalidBatchReference, InvalidSku, UnallocatedLine
 from allocation.service_layer import handlers, messagebus
+from unittest import mock
 
 
 @pytest.mark.unit
@@ -118,3 +119,23 @@ def test_delete_batch(make_fake_uow):
     assert uow.committed is True
     product = uow.products.get(sku=batch_args["sku"])
     assert product.batches_list == []
+
+
+@pytest.mark.unit
+@pytest.mark.service
+def test_sends_email_on_out_of_stock_error(make_fake_uow):
+    uow = make_fake_uow
+    sku = "POPULAR-CURTAINS"
+    messagebus.handle(events.BatchCreated(ref="batch1", sku=sku, qty=5, eta=None), uow=uow)
+    allocation_result = messagebus.handle(events.AllocationRequired(orderId="o1", sku=sku, qty=10), uow=uow)
+    assert allocation_result[0] is None
+    product = uow.products.get(sku=sku)
+    assert len(product.events) == 1
+    out_of_stock_event = product.events[0]
+    assert isinstance(out_of_stock_event, events.OutOfStock)
+    with mock.patch("allocation.adapters.email.send_email") as mock_send_email:
+        messagebus.handle(event=out_of_stock_event, uow=uow)
+        mock_send_email.assert_called_once_with(
+            "stock@made.com",
+            f"Out of stock for {out_of_stock_event.sku}",
+        )
