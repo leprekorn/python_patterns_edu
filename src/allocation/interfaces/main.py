@@ -70,5 +70,5 @@ class IUnitOfWork(Protocol):
     def rollback(self):
         raise NotImplementedError
 
-    def publish_events(self):
+    def collect_new_events(self):
         raise NotImplementedError

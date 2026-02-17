@@ -40,8 +40,8 @@ class FakeUnitOfWork(IUnitOfWork):
     def rollback(self):
         pass
 
-    def publish_events(self):
-        pass
+    def collect_new_events(self):
+        return []
 
 
 class FakeRepository(IRepository):
