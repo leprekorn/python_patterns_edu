@@ -1,9 +1,10 @@
+from unittest import mock
+
 import pytest
 
 from allocation.domain import events
 from allocation.domain.exceptions import InvalidBatchReference, InvalidSku, UnallocatedLine
 from allocation.service_layer import handlers, messagebus
-from unittest import mock
 
 
 @pytest.mark.unit
@@ -139,3 +140,16 @@ def test_sends_email_on_out_of_stock_error(make_fake_uow):
             "stock@made.com",
             f"Out of stock for {out_of_stock_event.sku}",
         )
+
+
+@pytest.mark.unit
+@pytest.mark.service
+def test_changes_available_quantity(make_fake_uow):
+    uow = make_fake_uow
+    sku = "STYLISH-LAMP"
+    batch_ref = "batch1"
+    messagebus.handle(event=events.BatchCreated(ref=batch_ref, sku=sku, qty=100, eta=None), uow=uow)
+    batch = uow.products.get(sku=sku).batches_list[0]
+    assert batch.available_quantity == 100
+    messagebus.handle(event=events.BatchQuantityChanged(ref=batch_ref, qty=50), uow=uow)
+    assert batch.available_quantity == 50

@@ -65,6 +65,13 @@ class FakeRepository(IRepository):
             self.seen.add(product)
         return product
 
+    def get_by_batchref(self, batchref: str) -> Optional[Product]:
+        for product in self._products:
+            if any(batch.reference == batchref for batch in product.batches):
+                self.seen.add(product)
+                return product
+        return None
+
     def list(self):
         products = list(self._products)
         for product in products:

@@ -76,6 +76,15 @@ def delete_batch(sku: str, reference: str, uow: IUnitOfWork) -> None:
         uow.commit()
 
 
+def change_batch_quantity(event: events.BatchQuantityChanged, uow: IUnitOfWork):
+    with uow:
+        product = uow.products.get_by_batchref(batchref=event.ref)
+        if not product:
+            raise InvalidSku(f"Invalid sku for batch reference {event.ref}")
+        product.change_batch_quantity(reference=event.ref, qty=event.qty)
+        uow.commit()
+
+
 def send_out_of_stock_notification(event: events.OutOfStock, uow: IUnitOfWork) -> None:
     email.send_email(
         "stock@made.com",

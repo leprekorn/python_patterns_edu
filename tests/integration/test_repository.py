@@ -98,3 +98,25 @@ def test_repository_can_list_batches(orm_session):
     assert len(retrieved_products) == len(batches)
     for product in retrieved_products:
         assert any(product.sku == batch.sku and product.batches[0] == batch for batch in batches)
+
+
+@pytest.mark.integration
+@pytest.mark.repository
+def test_repository_get_by_batchref(orm_session, insert_batch_via_session):
+    batch1 = Batch(ref="batch1", sku="GENERIC-SOFA", qty=100, eta=None)
+    batch1_id = insert_batch_via_session(
+        session=orm_session,
+        ref=batch1.reference,
+        sku=batch1.sku,
+        qty=batch1._purchase_quantity,
+        eta=batch1.eta,
+    )
+    repo = SQLAlchemyRepository(orm_session)
+    retrieved_product = repo.get_by_batchref(batchref=batch1.reference)
+    assert retrieved_product is not None
+    retrieved_batch = retrieved_product.get_batch(reference=batch1.reference)
+    assert retrieved_batch is not None
+    assert retrieved_batch.id == batch1_id  # type: ignore
+    assert retrieved_batch == batch1
+    assert retrieved_batch.sku == batch1.sku
+    assert retrieved_batch._purchase_quantity == batch1._purchase_quantity

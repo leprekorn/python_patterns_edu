@@ -1,9 +1,9 @@
+from collections import deque
 from typing import Callable, Dict, List, Type
 
 from allocation.domain import events
 from allocation.interfaces.main import IUnitOfWork
 from allocation.service_layer import handlers
-from collections import deque
 
 
 def handle(event: events.Event, uow: IUnitOfWork) -> List[str]:
@@ -20,5 +20,6 @@ def handle(event: events.Event, uow: IUnitOfWork) -> List[str]:
 HANDLERS: Dict[Type[events.Event], List[Callable]] = {
     events.AllocationRequired: [handlers.allocate],
     events.BatchCreated: [handlers.add_batch],
+    events.BatchQuantityChanged: [handlers.change_batch_quantity],
     events.OutOfStock: [handlers.send_out_of_stock_notification],
 }
