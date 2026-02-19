@@ -114,7 +114,7 @@ class Product:
             raise exceptions.InvalidBatchReference(f"Invalid batch reference {reference}")
         return batch
 
-    def change_batch_quantity(self, reference: str, qty: int) -> None:
+    def change_batch_quantity(self, reference: str, qty: int):
         batch = self.get_batch(reference=reference)
         batch._purchase_quantity = qty
         while batch.available_quantity < 0:

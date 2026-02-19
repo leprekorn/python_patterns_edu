@@ -1,3 +1,4 @@
+from datetime import date
 from unittest import mock
 
 import pytest
@@ -131,15 +132,14 @@ def test_sends_email_on_out_of_stock_error(make_fake_uow):
     MessageBus.handle(events.BatchCreated(ref="batch1", sku=sku, qty=5, eta=None), uow=uow)
     allocation_result = MessageBus.handle(events.AllocationRequired(orderId="o1", sku=sku, qty=10), uow=uow)
     assert allocation_result[0] is None
-    product = uow.products.get(sku=sku)
-    assert len(product.events) == 1
-    out_of_stock_event = product.events[0]
-    assert isinstance(out_of_stock_event, events.OutOfStock)
+    [collected_events] = uow.events_published
+    assert isinstance(collected_events, events.OutOfStock)
+    assert collected_events.sku == sku
     with mock.patch("allocation.adapters.email.send_email") as mock_send_email:
-        MessageBus.handle(event=out_of_stock_event, uow=uow)
+        MessageBus.handle(event=events.OutOfStock(sku=collected_events.sku), uow=uow)
         mock_send_email.assert_called_once_with(
             "stock@made.com",
-            f"Out of stock for {out_of_stock_event.sku}",
+            f"Out of stock for {collected_events.sku}",
         )
 
 
@@ -154,3 +154,30 @@ def test_changes_available_quantity(make_fake_uow):
     assert batch.available_quantity == 100
     MessageBus.handle(event=events.BatchQuantityChanged(ref=batch_ref, qty=50), uow=uow)
     assert batch.available_quantity == 50
+
+
+@pytest.mark.unit
+@pytest.mark.service
+def test_reallocates_on_batch_quantity_changed(make_fake_uow):
+    uow = make_fake_uow
+    event_history = [
+        events.BatchCreated("batch1", "INDIFFERENT-TABLE", 50, None),
+        events.BatchCreated("batch2", "INDIFFERENT-TABLE", 50, date.today()),
+        events.AllocationRequired("order1", "INDIFFERENT-TABLE", 20),
+        events.AllocationRequired("order2", "INDIFFERENT-TABLE", 20),
+    ]
+    for e in event_history:
+        MessageBus.handle(e, uow)
+    [batch1, batch2] = uow.products.get(sku="INDIFFERENT-TABLE").batches
+    assert batch1.available_quantity == 10
+    assert batch2.available_quantity == 50
+
+    MessageBus.handle(events.BatchQuantityChanged("batch1", 25), uow)
+
+    # order1 or order2 will be deallocated, so we'll have 25 - 20
+    assert batch1.available_quantity == 5
+    # and 20 will be reallocated to the next batch
+    assert batch2.available_quantity == 30
+
+    collected_events = list(uow.events_published)
+    assert any(isinstance(e, events.AllocationRequired) and e.orderId in ["order1", "order2"] for e in collected_events)

@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from allocation import config
 from allocation.adapters.orm import metadata, start_mappers
+from allocation.domain import events
 from allocation.domain.model import Batch, OrderLine, Product
 from allocation.entrypoints.main import app
 from allocation.interfaces.main import IRepository, ISession, IUnitOfWork
@@ -29,6 +30,7 @@ class FakeUnitOfWork(IUnitOfWork):
         self.session_factory = session_factory
         self.committed = False
         self.products = FakeRepository([])
+        self.events_published: List[events.Event] = []
 
     def __enter__(self):
         self.session = self.session_factory()
@@ -41,7 +43,10 @@ class FakeUnitOfWork(IUnitOfWork):
         pass
 
     def collect_new_events(self):
-        return []
+        for product in self.products.seen:
+            while product.events:
+                self.events_published.append(product.events[0])
+                yield product.events.pop(0)
 
 
 class FakeRepository(IRepository):
