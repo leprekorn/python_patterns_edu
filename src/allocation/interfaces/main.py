@@ -1,5 +1,6 @@
-from allocation.domain.model import Product
-from typing import Protocol, Optional, List, Set
+from typing import Callable, Dict, List, Optional, Protocol, Set, Type
+
+from allocation.domain import events, model
 
 
 class ISession(Protocol):
@@ -39,18 +40,18 @@ class IRepository(Protocol):
     Interface for any ORM and storage
     """
 
-    seen: Set[Product]
+    seen: Set[model.Product]
 
-    def add(self, product: Product):
+    def add(self, product: model.Product):
         raise NotImplementedError
 
-    def get(self, sku: str) -> Optional[Product]:
+    def get(self, sku: str) -> Optional[model.Product]:
         raise NotImplementedError
 
-    def get_by_batchref(self, batchref: str) -> Optional[Product]:
+    def get_by_batchref(self, batchref: str) -> Optional[model.Product]:
         raise NotImplementedError
 
-    def list(self) -> List[Product]:
+    def list(self) -> List[model.Product]:
         raise NotImplementedError
 
     def delete(self, sku: str):
@@ -74,4 +75,12 @@ class IUnitOfWork(Protocol):
         raise NotImplementedError
 
     def collect_new_events(self):
+        raise NotImplementedError
+
+
+class IMessageBus(Protocol):
+    HANDLERS: Dict[Type[events.Event], List[Callable]]
+
+    @staticmethod
+    def handle(event: events.Event, uow: IUnitOfWork):
         raise NotImplementedError
