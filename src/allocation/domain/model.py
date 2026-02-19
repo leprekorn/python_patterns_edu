@@ -57,6 +57,10 @@ class Batch:
         if line in self._allocations:
             self._allocations.remove(line)
 
+    def deallocate_one(self) -> OrderLine:
+        line = self._allocations.pop()
+        return line
+
     @property
     def allocated_quantity(self) -> int:
         return sum(line.qty for line in self._allocations)
@@ -109,6 +113,13 @@ class Product:
         if not batch:
             raise exceptions.InvalidBatchReference(f"Invalid batch reference {reference}")
         return batch
+
+    def change_batch_quantity(self, reference: str, qty: int):
+        batch = self.get_batch(reference=reference)
+        batch._purchase_quantity = qty
+        while batch.available_quantity < 0:
+            line = batch.deallocate_one()
+            self.events.append(events.AllocationRequired(orderId=line.orderId, sku=line.sku, qty=line.qty))
 
     def delete_batch(self, reference: str) -> None:
         batch = self.get_batch(reference=reference)

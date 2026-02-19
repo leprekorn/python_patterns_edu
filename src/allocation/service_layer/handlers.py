@@ -1,9 +1,9 @@
-from datetime import date
 from typing import Optional
 
-from allocation.domain import model
+from allocation.adapters import email
+from allocation.domain import events, model
 from allocation.domain.exceptions import InvalidBatchReference, InvalidSku
-from allocation.service_layer.unit_of_work import IUnitOfWork
+from allocation.interfaces.main import IUnitOfWork
 
 
 def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
@@ -23,12 +23,12 @@ def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
         }
 
 
-def allocate(orderId: str, sku: str, qty: int, uow: IUnitOfWork) -> Optional[str]:
-    line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
+def allocate(event: events.AllocationRequired, uow: IUnitOfWork) -> Optional[str]:
+    line = model.OrderLine(orderId=event.orderId, sku=event.sku, qty=event.qty)
     with uow:
-        product = uow.products.get(sku=sku)
+        product = uow.products.get(sku=line.sku)
         if not product:
-            raise InvalidSku(f"Invalid sku {sku}")
+            raise InvalidSku(f"Invalid sku {line.sku}")
         batch = product.allocate(line=line)
         uow.commit()
         if batch:
@@ -48,18 +48,20 @@ def deallocate(sku: str, orderId: str, qty: int, uow: IUnitOfWork) -> str:
 
 
 def add_batch(
-    reference: str,
-    sku: str,
-    qty: int,
-    eta: Optional[date],
+    event: events.BatchCreated,
     uow: IUnitOfWork,
 ) -> model.Batch:
-    batch = model.Batch(ref=reference, sku=sku, qty=qty, eta=eta)
     with uow:
-        product = uow.products.get(sku=sku)
+        product = uow.products.get(sku=event.sku)
         if not product:
-            product = model.Product(sku=sku, batches=[])
+            product = model.Product(sku=event.sku, batches=[])
             uow.products.add(product)
+        batch = model.Batch(
+            ref=event.ref,
+            sku=event.sku,
+            qty=event.qty,
+            eta=event.eta,
+        )
         product.batches.append(batch)
         uow.commit()
     return batch  # TODO do not return ORM object, return batchref str
@@ -72,3 +74,19 @@ def delete_batch(sku: str, reference: str, uow: IUnitOfWork) -> None:
             raise InvalidSku(f"Invalid sku {sku}")
         product.delete_batch(reference=reference)
         uow.commit()
+
+
+def change_batch_quantity(event: events.BatchQuantityChanged, uow: IUnitOfWork):
+    with uow:
+        product = uow.products.get_by_batchref(batchref=event.ref)
+        if not product:
+            raise InvalidSku(f"Invalid sku for batch reference {event.ref}")
+        product.change_batch_quantity(reference=event.ref, qty=event.qty)
+        uow.commit()
+
+
+def send_out_of_stock_notification(event: events.OutOfStock, uow: IUnitOfWork) -> None:
+    email.send_email(
+        "stock@made.com",
+        f"Out of stock for {event.sku}",
+    )

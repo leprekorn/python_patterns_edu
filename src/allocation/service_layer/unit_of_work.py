@@ -3,7 +3,6 @@ from sqlalchemy import create_engine
 from allocation import config
 from allocation.interfaces.main import IUnitOfWork
 from allocation.adapters.repository import SQLAlchemyRepository
-from allocation.service_layer import messagebus
 
 DEFAULT_SESSION_FACTORY = sessionmaker(
     bind=create_engine(
@@ -30,13 +29,11 @@ class SqlAlchemyUnitOfWork(IUnitOfWork):
 
     def commit(self):
         self.session.commit()
-        self.publish_events()
 
     def rollback(self):
         self.session.rollback()
 
-    def publish_events(self):
+    def collect_new_events(self):
         for product in self.products.seen:
             while product.events:
-                event = product.events.pop(0)
-                messagebus.handle(event=event)
+                yield product.events.pop(0)

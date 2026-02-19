@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from allocation.domain.model import Product
+from allocation.domain.model import Batch, Product
 from allocation.interfaces.main import IRepository, ISession
 
 
@@ -15,6 +15,15 @@ class SQLAlchemyRepository(IRepository):
 
     def get(self, sku: str) -> Optional[Product]:
         product = self.orm_session.query(Product).filter_by(sku=sku).first()
+        if product:
+            self.seen.add(product)
+        return product
+
+    def get_by_batchref(self, batchref: str) -> Optional[Product]:
+        batch = self.orm_session.query(Batch).filter_by(reference=batchref).first()
+        if not batch:
+            return None
+        product = batch.product
         if product:
             self.seen.add(product)
         return product
