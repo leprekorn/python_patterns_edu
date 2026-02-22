@@ -54,8 +54,8 @@ def test_deallocate_returns_batch_reference(make_fake_uow_and_messagebus):
     assert batch.reference == batch_ref
     assert batch.available_quantity == 90
 
-    unallocation_result = handlers.deallocate(sku=sku, orderId="o20", qty=10, uow=uow)
-    assert unallocation_result == batch.reference
+    unallocation_results = messagebus.handle(message=commands.Deallocate(sku=sku, orderId="o20", qty=10))
+    assert unallocation_results[0] == batch.reference
     assert batch.available_quantity == 100
 
 
@@ -67,7 +67,7 @@ def test_deallocate_non_allocated_line_raises_exception(make_fake_uow_and_messag
     sku = "FANCY-TABLE"
     messagebus.handle(message=commands.CreateBatch(ref="b70", sku=sku, qty=50, eta=None))
     with pytest.raises(UnallocatedLine, match=f"Order line {orderId} is not allocated to any batch in Product {sku}"):
-        handlers.deallocate(sku=sku, qty=50, orderId=orderId, uow=uow)
+        messagebus.handle(message=commands.Deallocate(sku=sku, qty=50, orderId=orderId))
 
 
 @pytest.mark.unit
@@ -81,7 +81,7 @@ def test_deallocate_for_absent_batch_raises_exception(make_fake_uow_and_messageb
         _ = handlers.get_batch(sku=abcent_sku, reference=abcent_batch_ref, uow=uow)
     messagebus.handle(message=commands.CreateBatch(ref="b90", sku=abcent_sku, qty=20, eta=None))
     with pytest.raises(UnallocatedLine, match=f"Order line {abcent_order_id} is not allocated to any batch in Product {abcent_sku}"):
-        _ = handlers.deallocate(sku=abcent_sku, qty=10, orderId=abcent_order_id, uow=uow)
+        messagebus.handle(message=commands.Deallocate(sku=abcent_sku, qty=10, orderId=abcent_order_id))
 
 
 @pytest.mark.unit

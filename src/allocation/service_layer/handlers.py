@@ -36,12 +36,12 @@ def allocate(command: commands.Allocate, uow: IUnitOfWork) -> Optional[str]:
         return None
 
 
-def deallocate(sku: str, orderId: str, qty: int, uow: IUnitOfWork) -> str:
-    line = model.OrderLine(orderId=orderId, sku=sku, qty=qty)
+def deallocate(command: commands.Deallocate, uow: IUnitOfWork) -> str:
+    line = model.OrderLine(orderId=command.orderId, sku=command.sku, qty=command.qty)
     with uow:
-        product = uow.products.get(sku=sku)
+        product = uow.products.get(sku=line.sku)
         if not product:
-            raise InvalidSku(f"Invalid sku {sku}")
+            raise InvalidSku(f"Invalid sku {line.sku}")
         batchref = product.deallocate(line=line)
         uow.commit()
         return batchref

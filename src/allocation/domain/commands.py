@@ -16,6 +16,13 @@ class Allocate(Command):
 
 
 @dataclass
+class Deallocate(Command):
+    orderId: str
+    sku: str
+    qty: int
+
+
+@dataclass
 class CreateBatch(Command):
     ref: str
     sku: str

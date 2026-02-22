@@ -29,6 +29,19 @@ def allocate(payload: AllocateRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/deallocate", status_code=200)
+def deallocate(payload: DeallocateRequest):
+    try:
+        command = commands.Deallocate(orderId=payload.orderid, sku=payload.sku, qty=payload.qty)
+        result = messageBus.handle(message=command)
+        batch_ref = result[0] if result else None
+        return {"batchref": batch_ref}
+    except exceptions.InvalidSku as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except exceptions.UnallocatedLine as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.post("/batches/", status_code=201)
 def add_batch(payload: AddBatchRequest):
     reference = payload.reference
@@ -48,23 +61,6 @@ def delete_batch(sku: str, batchref: str):
         raise HTTPException(status_code=400, detail=str(e))
     except exceptions.InvalidBatchReference as e:
         raise HTTPException(status_code=404, detail=str(e))
-
-
-@app.post("/deallocate", status_code=200)
-def deallocate(payload: DeallocateRequest):
-    try:
-        # TODO move to command and handler
-        batch_ref = handlers.deallocate(
-            sku=payload.sku,
-            orderId=payload.orderid,
-            qty=payload.qty,
-            uow=uow,
-        )
-        return {"batchref": batch_ref}
-    except exceptions.InvalidSku as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except exceptions.UnallocatedLine as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.get("/batches/{batchref}")

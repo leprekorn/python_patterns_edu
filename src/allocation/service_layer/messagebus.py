@@ -18,6 +18,7 @@ class MessageBus:
         commands.CreateBatch: handlers.add_batch,
         commands.ChangeBatchQuantity: handlers.change_batch_quantity,
         commands.Allocate: handlers.allocate,
+        commands.Deallocate: handlers.deallocate,
     }
 
     def __init__(self, uow: IUnitOfWork):
