@@ -1,7 +1,7 @@
 from typing import Optional
 
 from allocation.adapters import email
-from allocation.domain import events, model
+from allocation.domain import commands, events, model
 from allocation.domain.exceptions import InvalidBatchReference, InvalidSku
 from allocation.interfaces.main import IUnitOfWork
 
@@ -23,8 +23,8 @@ def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
         }
 
 
-def allocate(event: events.AllocationRequired, uow: IUnitOfWork) -> Optional[str]:
-    line = model.OrderLine(orderId=event.orderId, sku=event.sku, qty=event.qty)
+def allocate(command: commands.Allocate, uow: IUnitOfWork) -> Optional[str]:
+    line = model.OrderLine(orderId=command.orderId, sku=command.sku, qty=command.qty)
     with uow:
         product = uow.products.get(sku=line.sku)
         if not product:
@@ -48,19 +48,19 @@ def deallocate(sku: str, orderId: str, qty: int, uow: IUnitOfWork) -> str:
 
 
 def add_batch(
-    event: events.BatchCreated,
+    command: commands.CreateBatch,
     uow: IUnitOfWork,
 ) -> model.Batch:
     with uow:
-        product = uow.products.get(sku=event.sku)
+        product = uow.products.get(sku=command.sku)
         if not product:
-            product = model.Product(sku=event.sku, batches=[])
+            product = model.Product(sku=command.sku, batches=[])
             uow.products.add(product)
         batch = model.Batch(
-            ref=event.ref,
-            sku=event.sku,
-            qty=event.qty,
-            eta=event.eta,
+            ref=command.ref,
+            sku=command.sku,
+            qty=command.qty,
+            eta=command.eta,
         )
         product.batches.append(batch)
         uow.commit()
@@ -76,12 +76,12 @@ def delete_batch(sku: str, reference: str, uow: IUnitOfWork) -> None:
         uow.commit()
 
 
-def change_batch_quantity(event: events.BatchQuantityChanged, uow: IUnitOfWork):
+def change_batch_quantity(command: commands.ChangeBatchQuantity, uow: IUnitOfWork):
     with uow:
-        product = uow.products.get_by_batchref(batchref=event.ref)
+        product = uow.products.get_by_batchref(batchref=command.ref)
         if not product:
-            raise InvalidSku(f"Invalid sku for batch reference {event.ref}")
-        product.change_batch_quantity(reference=event.ref, qty=event.qty)
+            raise InvalidSku(f"Invalid sku for batch reference {command.ref}")
+        product.change_batch_quantity(reference=command.ref, qty=command.qty)
         uow.commit()
 
 

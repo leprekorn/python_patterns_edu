@@ -12,10 +12,10 @@ from sqlalchemy.pool import StaticPool
 
 from allocation import config
 from allocation.adapters.orm import metadata, start_mappers
-from allocation.domain import events
 from allocation.domain.model import Batch, OrderLine, Product
 from allocation.entrypoints.main import app
-from allocation.interfaces.main import IRepository, ISession, IUnitOfWork
+from allocation.interfaces.main import IRepository, ISession, IUnitOfWork, IMessage
+from allocation.service_layer.messagebus import MessageBus
 
 TRUNCATE_QUERIES = (
     "truncate table products CASCADE;",
@@ -30,7 +30,7 @@ class FakeUnitOfWork(IUnitOfWork):
         self.session_factory = session_factory
         self.committed = False
         self.products = FakeRepository([])
-        self.events_published: List[events.Event] = []
+        self.events_published: List[IMessage] = []
 
     def __enter__(self):
         self.session = self.session_factory()
@@ -85,10 +85,11 @@ class FakeRepository(IRepository):
 
 
 @pytest.fixture(scope="function")
-def make_fake_uow(session_factory: Callable[[], ISession]) -> FakeUnitOfWork:
+def make_fake_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tuple[FakeUnitOfWork, MessageBus]:
     session_factory = session_factory
     uow = FakeUnitOfWork(session_factory=session_factory)
-    return uow
+    messagebus = MessageBus(uow=uow)
+    return uow, messagebus
 
 
 @pytest.fixture(scope="function")

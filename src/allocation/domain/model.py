@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, List, Optional, Set
-
-from allocation.domain import events, exceptions
+from allocation.interfaces.main import IMessage
+from allocation.domain import events, commands, exceptions
 
 
 @dataclass(eq=True)
@@ -84,7 +84,7 @@ class Product:
         self.sku = sku
         self.batches = batches or []
         self.version_number = version_number
-        self.events: List[events.Event] = []
+        self.events: List[IMessage] = []
 
     def allocate(self, line: OrderLine) -> Optional[Batch]:
         try:
@@ -119,7 +119,7 @@ class Product:
         batch._purchase_quantity = qty
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
-            self.events.append(events.AllocationRequired(orderId=line.orderId, sku=line.sku, qty=line.qty))
+            self.events.append(commands.Allocate(orderId=line.orderId, sku=line.sku, qty=line.qty))
 
     def delete_batch(self, reference: str) -> None:
         batch = self.get_batch(reference=reference)

@@ -1,6 +1,6 @@
-from typing import Callable, Dict, List, Optional, Protocol, Set, Type
+from typing import List, Optional, Protocol, Set, Union
 
-from allocation.domain import events, model
+from allocation.domain import model, events, commands
 
 
 class ISession(Protocol):
@@ -78,9 +78,4 @@ class IUnitOfWork(Protocol):
         raise NotImplementedError
 
 
-class IMessageBus(Protocol):
-    HANDLERS: Dict[Type[events.Event], List[Callable]]
-
-    @staticmethod
-    def handle(event: events.Event, uow: IUnitOfWork):
-        raise NotImplementedError
+IMessage = Union[commands.Command, events.Event]
