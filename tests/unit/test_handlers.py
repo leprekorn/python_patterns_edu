@@ -111,12 +111,12 @@ def test_delete_batch(make_fake_uow_and_messagebus):
     existing = uow.products.list()
     assert existing == []
     with pytest.raises(InvalidSku, match=f"Invalid sku {batch_args['sku']}"):
-        handlers.delete_batch(sku=batch_args["sku"], reference=batch_args["ref"], uow=uow)
+        messagebus.handle(message=commands.DeleteBatch(sku=batch_args["sku"], ref=batch_args["ref"]))
     assert uow.committed is False
 
     messagebus.handle(message=commands.CreateBatch(**batch_args))
 
-    handlers.delete_batch(sku=batch_args["sku"], reference=batch_args["ref"], uow=uow)
+    messagebus.handle(message=commands.DeleteBatch(sku=batch_args["sku"], ref=batch_args["ref"]))
     with pytest.raises(InvalidBatchReference, match=f"Invalid batch reference {batch_args['ref']}"):
         _ = handlers.get_batch(sku=batch_args["sku"], reference=batch_args["ref"], uow=uow)
 

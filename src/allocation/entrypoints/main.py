@@ -55,8 +55,8 @@ def add_batch(payload: AddBatchRequest):
 @app.delete("/batches/{batchref}", status_code=204)
 def delete_batch(sku: str, batchref: str):
     try:
-        # TODO move to command and handler
-        handlers.delete_batch(sku=sku, reference=batchref, uow=uow)
+        command = commands.DeleteBatch(ref=batchref, sku=sku)
+        messageBus.handle(message=command)
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     except exceptions.InvalidBatchReference as e:

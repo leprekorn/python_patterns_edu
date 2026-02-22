@@ -16,6 +16,7 @@ class MessageBus:
 
     COMMAND_HANDLERS: Dict[Type[commands.Command], Callable] = {
         commands.CreateBatch: handlers.add_batch,
+        commands.DeleteBatch: handlers.delete_batch,
         commands.ChangeBatchQuantity: handlers.change_batch_quantity,
         commands.Allocate: handlers.allocate,
         commands.Deallocate: handlers.deallocate,

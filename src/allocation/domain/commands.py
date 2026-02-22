@@ -31,6 +31,12 @@ class CreateBatch(Command):
 
 
 @dataclass
+class DeleteBatch(Command):
+    ref: str
+    sku: str
+
+
+@dataclass
 class ChangeBatchQuantity(Command):
     ref: str
     qty: int

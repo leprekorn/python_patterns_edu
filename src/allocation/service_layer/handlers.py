@@ -64,15 +64,15 @@ def add_batch(
         )
         product.batches.append(batch)
         uow.commit()
-    return batch  # TODO do not return ORM object, return batchref str
+    return batch
 
 
-def delete_batch(sku: str, reference: str, uow: IUnitOfWork) -> None:
+def delete_batch(command: commands.DeleteBatch, uow: IUnitOfWork) -> None:
     with uow:
-        product = uow.products.get(sku=sku)
+        product = uow.products.get(sku=command.sku)
         if not product:
-            raise InvalidSku(f"Invalid sku {sku}")
-        product.delete_batch(reference=reference)
+            raise InvalidSku(f"Invalid sku {command.sku}")
+        product.delete_batch(reference=command.ref)
         uow.commit()
 
 
