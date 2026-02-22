@@ -2,6 +2,8 @@ import logging
 from collections import deque
 from typing import Callable, Dict, List, Type
 
+from tenacity import retry, stop_after_attempt, wait_exponential
+
 from allocation.domain import commands, events
 from allocation.interfaces.main import IMessage, IUnitOfWork
 from allocation.service_layer import handlers
@@ -39,6 +41,7 @@ class MessageBus:
                 raise Exception(f"{message} was not an Event or Command")
         return results
 
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=5))
     def handle_event(self, event: events.Event, queue: deque[IMessage]):
         for handler in self.EVENT_HANDLERS[type(event)]:
             try:
