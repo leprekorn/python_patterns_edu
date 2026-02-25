@@ -18,6 +18,13 @@ services:
       -c config_file=/etc/postgresql/postgresql.conf
       -c hba_file=/etc/postgresql/pg_hba.conf
 
+  redis:
+    image: docker.io/library/redis:8.6.1
+    restart: always
+    container_name: redis
+    ports:
+      - "127.0.0.1:16379:6379"
+
   app:
     image: leprekorn/allocation:0.0.1
     restart: always
@@ -26,6 +33,7 @@ services:
       - "127.0.0.1:8000:80"
     depends_on:
       - postgres
+      - redis
     env_file:
       - ../../env/allocation.env
     volumes:
