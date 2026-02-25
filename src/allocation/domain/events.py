@@ -6,5 +6,13 @@ class Event:
 
 
 @dataclass
+class Allocated(Event):
+    orderId: str
+    sku: str
+    qty: int
+    batchref: str
+
+
+@dataclass
 class OutOfStock(Event):
     sku: str
