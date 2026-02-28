@@ -1,6 +1,6 @@
 from typing import List, Optional, Protocol, Set, Union
 
-from allocation.domain import model, events, commands
+from allocation.domain import commands, events, model
 
 
 class ISession(Protocol):
@@ -79,3 +79,11 @@ class IUnitOfWork(Protocol):
 
 
 IMessage = Union[commands.Command, events.Event]
+
+
+class IRedisAdapter(Protocol):
+    def publish(self, channel: str, message: dict):
+        raise NotImplementedError
+
+    def subscribe(self, channel: str):
+        raise NotImplementedError

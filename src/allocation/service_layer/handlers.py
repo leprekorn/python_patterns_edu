@@ -1,6 +1,8 @@
+from dataclasses import asdict
 from typing import Optional
 
-from allocation.adapters import email
+from allocation import config
+from allocation.adapters import email, redis
 from allocation.domain import commands, events, model
 from allocation.domain.exceptions import InvalidBatchReference, InvalidSku
 from allocation.interfaces.main import IUnitOfWork
@@ -90,3 +92,9 @@ def send_out_of_stock_notification(event: events.OutOfStock, uow: IUnitOfWork) -
         "stock@made.com",
         f"Out of stock for {event.sku}",
     )
+
+
+def publish_allocated_event(event: events.Allocated, uow: IUnitOfWork) -> None:
+    redis_config = config.get_redis_url()
+    redisAdapter = redis.RedisAdapter(host=str(redis_config["host"]), port=int(redis_config["port"]))
+    redisAdapter.publish(channel="line_allocated", message=asdict(event))

@@ -4,8 +4,10 @@ import time
 import redis
 from redis.exceptions import ConnectionError
 
+from allocation.interfaces.main import IRedisAdapter
 
-class RedisAdapter:
+
+class RedisAdapter(IRedisAdapter):
     def __init__(self, host: str, port: int):
         self.redis = redis.Redis(
             host=host,

@@ -7,7 +7,7 @@ class Event:
 
 @dataclass
 class Allocated(Event):
-    orderId: str
+    orderid: str
     sku: str
     qty: int
     batchref: str
