@@ -12,9 +12,10 @@ from sqlalchemy.pool import StaticPool
 
 from allocation import config
 from allocation.adapters.orm import metadata, start_mappers
+from allocation.adapters.redis import RedisAdapter
 from allocation.domain.model import Batch, OrderLine, Product
 from allocation.entrypoints.main import app
-from allocation.interfaces.main import IRepository, ISession, IUnitOfWork, IMessage
+from allocation.interfaces.main import IMessage, IRepository, ISession, IUnitOfWork
 from allocation.service_layer.messagebus import MessageBus
 
 TRUNCATE_QUERIES = (
@@ -90,6 +91,14 @@ def make_fake_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tup
     uow = FakeUnitOfWork(session_factory=session_factory)
     messagebus = MessageBus(uow=uow)
     return uow, messagebus
+
+
+@pytest.fixture(scope="function")
+def make_redis_client():
+    redis_url = config.get_redis_url()
+    redis = RedisAdapter(host=str(redis_url["host"]), port=int(redis_url["port"]))
+    redis.wait_until_ready(timeout=10)
+    yield redis
 
 
 @pytest.fixture(scope="function")
