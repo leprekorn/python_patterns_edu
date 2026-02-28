@@ -1,7 +1,9 @@
-import pytest
-from allocation.domain.model import Batch, OrderLine, Product
-from allocation.domain import events
 import datetime
+
+import pytest
+
+from allocation.domain import events
+from allocation.domain.model import Batch, OrderLine, Product
 
 today = datetime.date.today()
 tomorrow = today + datetime.timedelta(days=1)
@@ -141,3 +143,18 @@ def test_records_out_of_stock_event_if_cannot_allocate():
     allocation = product.allocate(sku2_line)
     assert product.events[-1] == events.OutOfStock(sku="sku2")
     assert allocation is None
+
+
+@pytest.mark.unit
+def test_allocation_create_allocated_event(make_batch_and_line):
+    batch, line = make_batch_and_line(
+        batch_sku="Orange-chair",
+        batch_qty=20,
+        line_sku="Orange-chair",
+        line_qty=2,
+    )
+    product = Product(sku="Orange-chair", batches=[batch])
+    product.allocate(line=line)
+    allocated_event = events.Allocated(orderId=line.orderId, sku=line.sku, qty=line.qty, batchref=batch.reference)
+    assert allocated_event in product.events
+    assert product.events[-1] == allocated_event

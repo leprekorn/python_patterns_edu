@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, List, Optional, Set
+
+from allocation.domain import commands, events, exceptions
 from allocation.interfaces.main import IMessage
-from allocation.domain import events, commands, exceptions
 
 
 @dataclass(eq=True)
@@ -91,6 +92,7 @@ class Product:
             batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
             batch.allocate(line)
             self.version_number += 1
+            self.events.append(events.Allocated(orderId=line.orderId, sku=line.sku, qty=line.qty, batchref=batch.reference))
         except StopIteration:
             self.events.append(events.OutOfStock(sku=line.sku))
             return None
