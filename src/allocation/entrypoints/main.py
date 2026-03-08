@@ -2,6 +2,7 @@ from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
 
+from allocation import views
 from allocation.adapters import orm
 from allocation.domain import commands, exceptions
 from allocation.entrypoints.schemas import AddBatchRequest, AllocateRequest, DeallocateRequest
@@ -13,7 +14,7 @@ uow = unit_of_work.SqlAlchemyUnitOfWork()
 messageBus = messagebus.MessageBus(uow=uow)
 
 
-@app.post("/allocate", status_code=201)
+@app.post("/allocate", status_code=202)
 def allocate(payload: AllocateRequest):
     orderId = payload.orderid
     sku = payload.sku
@@ -29,7 +30,7 @@ def allocate(payload: AllocateRequest):
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.post("/deallocate", status_code=200)
+@app.post("/deallocate", status_code=202)
 def deallocate(payload: DeallocateRequest):
     try:
         command = commands.Deallocate(orderId=payload.orderid, sku=payload.sku, qty=payload.qty)
@@ -64,7 +65,7 @@ def delete_batch(sku: str, batchref: str):
 
 
 @app.get("/batches/{batchref}")
-def get(sku: str, batchref: str):
+def get_batches(sku: str, batchref: str):
     try:
         batch_data = handlers.get_batch(sku=sku, reference=batchref, uow=uow)
         return batch_data
@@ -72,3 +73,11 @@ def get(sku: str, batchref: str):
         raise HTTPException(status_code=400, detail=str(e))
     except exceptions.InvalidBatchReference as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/allocations/{orderid}")
+def get_allocations(orderid: str):
+    result = views.allocations(orderId=orderid, uow=uow)
+    if result is None:
+        raise HTTPException(status_code=400, detail=f"Order line {orderid} not found")
+    return result

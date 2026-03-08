@@ -10,13 +10,15 @@ from allocation.service_layer import handlers
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_batch_allocate_returns_allocation(make_fake_uow_and_messagebus):
-    _, messagebus = make_fake_uow_and_messagebus
+def test_batch_allocate(make_fake_uow_and_messagebus):
+    uow, messagebus = make_fake_uow_and_messagebus
     sku = "COMPLICATED-LAMP"
     batch_ref = "batch1"
     messagebus.handle(message=commands.CreateBatch(ref=batch_ref, sku=sku, qty=100, eta=None))
-    results = messagebus.handle(message=commands.Allocate(orderId="o1", sku=sku, qty=10))
-    assert results[0] == batch_ref
+    messagebus.handle(message=commands.Allocate(orderId="o1", sku=sku, qty=10))
+    batch = uow.products.get(sku=sku).batches_list[0]
+    assert batch.reference == batch_ref
+    assert batch.available_quantity == 90
 
 
 @pytest.mark.unit
@@ -25,7 +27,6 @@ def test_error_for_invalid_sku(make_fake_uow_and_messagebus):
     _, messagebus = make_fake_uow_and_messagebus
     existing_sku = "AREALSKU"
     abcent_sku = "NONEXISTENTSKU"
-    # MessageBus.handle(events.BatchCreated(ref="b1", sku=existing_sku, qty=100, eta=None), uow=uow)
 
     messagebus.handle(message=commands.CreateBatch(ref="b1", sku=existing_sku, qty=100, eta=None))
     with pytest.raises(handlers.InvalidSku, match=f"Invalid sku {abcent_sku}"):
@@ -44,7 +45,7 @@ def test_commits(make_fake_uow_and_messagebus):
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_deallocate_returns_batch_reference(make_fake_uow_and_messagebus):
+def test_deallocate(make_fake_uow_and_messagebus):
     uow, messagebus = make_fake_uow_and_messagebus
     batch_ref = "b50"
     sku = "CRAZY-CHAIR"
@@ -54,15 +55,14 @@ def test_deallocate_returns_batch_reference(make_fake_uow_and_messagebus):
     assert batch.reference == batch_ref
     assert batch.available_quantity == 90
 
-    unallocation_results = messagebus.handle(message=commands.Deallocate(sku=sku, orderId="o20", qty=10))
-    assert unallocation_results[0] == batch.reference
+    messagebus.handle(message=commands.Deallocate(sku=sku, orderId="o20", qty=10))
     assert batch.available_quantity == 100
 
 
 @pytest.mark.unit
 @pytest.mark.service
 def test_deallocate_non_allocated_line_raises_exception(make_fake_uow_and_messagebus):
-    uow, messagebus = make_fake_uow_and_messagebus
+    _, messagebus = make_fake_uow_and_messagebus
     orderId = "o30"
     sku = "FANCY-TABLE"
     messagebus.handle(message=commands.CreateBatch(ref="b70", sku=sku, qty=50, eta=None))

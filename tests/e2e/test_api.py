@@ -49,13 +49,23 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
     allocate_data = {"orderid": random_orderid(), "sku": earlybatch["sku"], "qty": 3}
     r = fastapi_test_client.post(f"{url}/allocate", json=allocate_data)
 
-    assert r.status_code == 201
-    assert r.json()["batchref"] == earlybatch["reference"]
+    assert r.status_code == 202
+
+    allocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['orderid']}")
+    assert allocation.status_code == 200
+    assert allocation.json() == {"sku": earlybatch["sku"], "batchref": earlybatch["reference"]}, (
+        f"expected allocation to be {earlybatch['reference']} for sku {earlybatch['sku']}, but got {allocation.json()}"
+    )
 
     deallocate_data = {"sku": earlybatch["sku"], "orderid": allocate_data["orderid"], "qty": 3}
     deallocated_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
-    assert deallocated_request.status_code == 200
-    assert deallocated_request.json()["batchref"] == earlybatch["reference"]
+    assert deallocated_request.status_code == 202
+
+    deallocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['orderid']}")
+    assert deallocation.status_code == 200
+    assert deallocation.json() == {"sku": None, "batchref": None}, (
+        f"expected deallocation to have no batchref and no sku, but got {deallocation.json()}"
+    )
 
     for batch in (earlybatch, laterbatch, otherbatch):
         delete_response = fastapi_test_client.delete(f"{url}/batches/{batch['reference']}?sku={batch['sku']}")
@@ -93,6 +103,9 @@ def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
         deallocate_from_existing_product_request.json()["detail"] == f"Order line {orderid} is not allocated to any batch in Product {sku}"
     )
 
+    allocation = fastapi_test_client.get(f"{url}/allocations/{orderid}")
+    assert allocation.status_code == 400
+
     delete_batch_request = fastapi_test_client.delete(f"{url}/batches/{batchref}?sku={sku}")
     assert delete_batch_request.status_code == 204
 
@@ -106,3 +119,6 @@ def test_unhappy_path_post_allocate_returns_400_and_error_message(fastapi_test_c
     r = fastapi_test_client.post(f"{url}/allocate", json=data)
     assert r.status_code == 400
     assert r.json()["detail"] == f"Invalid sku {unknown_sku}"
+
+    allocation = fastapi_test_client.get(f"{url}/allocations/{orderid}")
+    assert allocation.status_code == 400

@@ -45,8 +45,12 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client, make_red
     allocate_data = {"orderid": random_orderid(), "sku": sku, "qty": 3}
     r = fastapi_test_client.post(f"{url}/allocate", json=allocate_data)
 
-    assert r.status_code == 201
-    assert r.json()["batchref"] == earlybatch["reference"]
+    assert r.status_code == 202
+    allocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['orderid']}")
+    assert allocation.status_code == 200
+    assert allocation.json() == {"sku": earlybatch["sku"], "batchref": earlybatch["reference"]}, (
+        f"expected allocation to be {earlybatch['reference']} for sku {earlybatch['sku']}, but got {allocation.json()}"
+    )
 
     for attempt in Retrying(stop=stop_after_delay(3), reraise=True):
         with attempt:

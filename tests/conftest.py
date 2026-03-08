@@ -17,6 +17,7 @@ from allocation.domain.model import Batch, OrderLine, Product
 from allocation.entrypoints.main import app
 from allocation.interfaces.main import IMessage, IRepository, ISession, IUnitOfWork
 from allocation.service_layer.messagebus import MessageBus
+from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
 
 TRUNCATE_QUERIES = (
     "truncate table products CASCADE;",
@@ -89,6 +90,14 @@ class FakeRepository(IRepository):
 def make_fake_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tuple[FakeUnitOfWork, MessageBus]:
     session_factory = session_factory
     uow = FakeUnitOfWork(session_factory=session_factory)
+    messagebus = MessageBus(uow=uow)
+    return uow, messagebus
+
+
+@pytest.fixture(scope="function")
+def make_real_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tuple[SqlAlchemyUnitOfWork, MessageBus]:
+    session_factory = session_factory
+    uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
     messagebus = MessageBus(uow=uow)
     return uow, messagebus
 

@@ -1,5 +1,4 @@
 from dataclasses import asdict
-from typing import Optional
 
 from allocation import config
 from allocation.adapters import email, redis
@@ -25,28 +24,24 @@ def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
         }
 
 
-def allocate(command: commands.Allocate, uow: IUnitOfWork) -> Optional[str]:
+def allocate(command: commands.Allocate, uow: IUnitOfWork) -> None:
     line = model.OrderLine(orderId=command.orderId, sku=command.sku, qty=command.qty)
     with uow:
         product = uow.products.get(sku=line.sku)
         if not product:
             raise InvalidSku(f"Invalid sku {line.sku}")
-        batch = product.allocate(line=line)
+        product.allocate(line=line)
         uow.commit()
-        if batch:
-            return batch.reference
-        return None
 
 
-def deallocate(command: commands.Deallocate, uow: IUnitOfWork) -> str:
+def deallocate(command: commands.Deallocate, uow: IUnitOfWork) -> None:
     line = model.OrderLine(orderId=command.orderId, sku=command.sku, qty=command.qty)
     with uow:
         product = uow.products.get(sku=line.sku)
         if not product:
             raise InvalidSku(f"Invalid sku {line.sku}")
-        batchref = product.deallocate(line=line)
+        product.deallocate(line=line)
         uow.commit()
-        return batchref
 
 
 def add_batch(
