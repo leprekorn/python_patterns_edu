@@ -98,7 +98,7 @@ def test_prefers_current_stock_batches_to_shipments():
     in_stock_batch = Batch(ref="in-stock-batch", sku="RETRO-CLOCK", qty=100, eta=None)
     shipment_batch = Batch(ref="shipment_batch", sku="RETRO-CLOCK", qty=100, eta=tomorrow)
     product = Product(sku="RETRO-CLOCK", batches=[in_stock_batch, shipment_batch])
-    line = OrderLine(orderId="oref", sku="RETRO-CLOCK", qty=10)
+    line = OrderLine(order_id="oref", sku="RETRO-CLOCK", qty=10)
 
     assert in_stock_batch < shipment_batch
     assert shipment_batch > in_stock_batch
@@ -118,7 +118,7 @@ def test_prefers_earlier_batches():
     fastest = Batch(ref="fastest_batch", sku="MINIMALIST_SPOON", qty=100, eta=today)
     medium = Batch(ref="medium_batch", sku="MINIMALIST_SPOON", qty=100, eta=tomorrow)
     slower = Batch(ref="slow-batch", sku="MINIMALIST_SPOON", qty=100, eta=day_after_tomorrow)
-    line = OrderLine(orderId="oref", sku="MINIMALIST_SPOON", qty=10)
+    line = OrderLine(order_id="oref", sku="MINIMALIST_SPOON", qty=10)
     product = Product(sku="MINIMALIST_SPOON", batches=[slower, medium, fastest])
     allocated_batch = product.allocate(line=line)
     assert allocated_batch is fastest
@@ -155,6 +155,6 @@ def test_allocation_create_allocated_event(make_batch_and_line):
     )
     product = Product(sku="Orange-chair", batches=[batch])
     product.allocate(line=line)
-    allocated_event = events.Allocated(orderid=line.orderId, sku=line.sku, qty=line.qty, batchref=batch.reference)
+    allocated_event = events.Allocated(order_id=line.order_id, sku=line.sku, qty=line.qty, batchref=batch.reference)
     assert allocated_event in product.events
     assert product.events[-1] == allocated_event

@@ -25,7 +25,7 @@ def get_batch(sku: str, reference: str, uow: IUnitOfWork) -> dict:
 
 
 def allocate(command: commands.Allocate, uow: IUnitOfWork) -> None:
-    line = model.OrderLine(orderId=command.orderId, sku=command.sku, qty=command.qty)
+    line = model.OrderLine(order_id=command.order_id, sku=command.sku, qty=command.qty)
     with uow:
         product = uow.products.get(sku=line.sku)
         if not product:
@@ -35,7 +35,7 @@ def allocate(command: commands.Allocate, uow: IUnitOfWork) -> None:
 
 
 def deallocate(command: commands.Deallocate, uow: IUnitOfWork) -> None:
-    line = model.OrderLine(orderId=command.orderId, sku=command.sku, qty=command.qty)
+    line = model.OrderLine(order_id=command.order_id, sku=command.sku, qty=command.qty)
     with uow:
         product = uow.products.get(sku=line.sku)
         if not product:

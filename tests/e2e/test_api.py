@@ -1,7 +1,7 @@
 import pytest
 
 from allocation import config
-from tests.utils import random_batchref, random_orderid, random_sku
+from tests.utils import random_batchref, random_order_id, random_sku
 
 url = config.get_api_url()
 
@@ -46,22 +46,22 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
         f"expected batch reference to be {earlybatch['reference']}, but got {r.json()['reference']}"
     )
 
-    allocate_data = {"orderid": random_orderid(), "sku": earlybatch["sku"], "qty": 3}
+    allocate_data = {"order_id": random_order_id(), "sku": earlybatch["sku"], "qty": 3}
     r = fastapi_test_client.post(f"{url}/allocate", json=allocate_data)
 
     assert r.status_code == 202
 
-    allocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['orderid']}")
+    allocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['order_id']}")
     assert allocation.status_code == 200
     assert allocation.json() == {"sku": earlybatch["sku"], "batchref": earlybatch["reference"]}, (
         f"expected allocation to be {earlybatch['reference']} for sku {earlybatch['sku']}, but got {allocation.json()}"
     )
 
-    deallocate_data = {"sku": earlybatch["sku"], "orderid": allocate_data["orderid"], "qty": 3}
+    deallocate_data = {"sku": earlybatch["sku"], "order_id": allocate_data["order_id"], "qty": 3}
     deallocated_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
     assert deallocated_request.status_code == 202
 
-    deallocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['orderid']}")
+    deallocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['order_id']}")
     assert deallocation.status_code == 200
     assert deallocation.json() == {"sku": None, "batchref": None}, (
         f"expected deallocation to have no batchref and no sku, but got {deallocation.json()}"
@@ -82,8 +82,8 @@ def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
     assert r.status_code == 400
     assert r.json()["detail"] == f"Invalid sku {sku}"
 
-    orderid = random_orderid()
-    deallocate_data = {"sku": sku, "orderid": orderid, "qty": 10}
+    order_id = random_order_id()
+    deallocate_data = {"sku": sku, "order_id": order_id, "qty": 10}
     deallocate_from_abcent_product_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
     assert deallocate_from_abcent_product_request.json()["detail"] == f"Invalid sku {sku}"
     assert deallocate_from_abcent_product_request.status_code == 400
@@ -100,10 +100,10 @@ def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
     deallocate_from_existing_product_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
     assert deallocate_from_existing_product_request.status_code == 400
     assert (
-        deallocate_from_existing_product_request.json()["detail"] == f"Order line {orderid} is not allocated to any batch in Product {sku}"
+        deallocate_from_existing_product_request.json()["detail"] == f"Order line {order_id} is not allocated to any batch in Product {sku}"
     )
 
-    allocation = fastapi_test_client.get(f"{url}/allocations/{orderid}")
+    allocation = fastapi_test_client.get(f"{url}/allocations/{order_id}")
     assert allocation.status_code == 400
 
     delete_batch_request = fastapi_test_client.delete(f"{url}/batches/{batchref}?sku={sku}")
@@ -114,11 +114,11 @@ def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
 @pytest.mark.api
 @pytest.mark.usefixtures("restart_api")
 def test_unhappy_path_post_allocate_returns_400_and_error_message(fastapi_test_client):
-    unknown_sku, orderid = random_sku(), random_orderid()
-    data = {"orderid": orderid, "sku": unknown_sku, "qty": 20}
+    unknown_sku, order_id = random_sku(), random_order_id()
+    data = {"order_id": order_id, "sku": unknown_sku, "qty": 20}
     r = fastapi_test_client.post(f"{url}/allocate", json=data)
     assert r.status_code == 400
     assert r.json()["detail"] == f"Invalid sku {unknown_sku}"
 
-    allocation = fastapi_test_client.get(f"{url}/allocations/{orderid}")
+    allocation = fastapi_test_client.get(f"{url}/allocations/{order_id}")
     assert allocation.status_code == 400

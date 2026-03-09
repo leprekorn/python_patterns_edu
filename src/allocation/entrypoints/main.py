@@ -16,11 +16,11 @@ messageBus = messagebus.MessageBus(uow=uow)
 
 @app.post("/allocate", status_code=202)
 def allocate(payload: AllocateRequest):
-    orderId = payload.orderid
+    order_id = payload.order_id
     sku = payload.sku
     qty = payload.qty
     try:
-        command = commands.Allocate(orderId=orderId, sku=sku, qty=qty)
+        command = commands.Allocate(order_id=order_id, sku=sku, qty=qty)
         result = messageBus.handle(message=command)
         batch_ref = result[0] if result else None
         return {"batchref": batch_ref}
@@ -33,7 +33,7 @@ def allocate(payload: AllocateRequest):
 @app.post("/deallocate", status_code=202)
 def deallocate(payload: DeallocateRequest):
     try:
-        command = commands.Deallocate(orderId=payload.orderid, sku=payload.sku, qty=payload.qty)
+        command = commands.Deallocate(order_id=payload.order_id, sku=payload.sku, qty=payload.qty)
         result = messageBus.handle(message=command)
         batch_ref = result[0] if result else None
         return {"batchref": batch_ref}
@@ -75,9 +75,9 @@ def get_batches(sku: str, batchref: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@app.get("/allocations/{orderid}")
-def get_allocations(orderid: str):
-    result = views.allocations(orderId=orderid, uow=uow)
+@app.get("/allocations/{order_id}")
+def get_allocations(order_id: str):
+    result = views.allocations(order_id=order_id, uow=uow)
     if result is None:
-        raise HTTPException(status_code=400, detail=f"Order line {orderid} not found")
+        raise HTTPException(status_code=400, detail=f"Order line {order_id} not found")
     return result

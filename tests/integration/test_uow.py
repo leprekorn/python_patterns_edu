@@ -5,7 +5,7 @@ from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy import text
 import pytest
-from tests.utils import random_orderid, random_batchref, random_sku
+from tests.utils import random_order_id, random_batchref, random_sku
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
 
@@ -14,7 +14,7 @@ from concurrent.futures import ThreadPoolExecutor
 @pytest.mark.uow
 def test_uow_can_get_batch_and_allocate_to_it(session_factory, insert_batch_via_session):
     sku = "HIPSTER-WORKBENCH"
-    orderId = "order1"
+    order_id = "order1"
     batchRef = "batch1"
     session = session_factory()
     insert_batch_via_session(
@@ -30,13 +30,13 @@ def test_uow_can_get_batch_and_allocate_to_it(session_factory, insert_batch_via_
     with uow:
         product = uow.products.get(sku=sku)
         assert product is not None
-        line = model.OrderLine(orderId=orderId, sku=sku, qty=10)
+        line = model.OrderLine(order_id=order_id, sku=sku, qty=10)
         product.allocate(line)
         uow.commit()
 
     orderLine_id = session.execute(
-        text('SELECT id FROM order_lines WHERE "orderId" = :orderid AND sku = :sku'),
-        dict(orderid=orderId, sku=sku),
+        text('SELECT id FROM order_lines WHERE "order_id" = :order_id AND sku = :sku'),
+        dict(order_id=order_id, sku=sku),
     ).scalar_one()
 
     allocated_batch_ref = session.execute(
@@ -118,9 +118,9 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
     )
     session.commit()
 
-    order1, order2 = random_orderid(name="order1"), random_orderid(name="order2")
-    line1 = model.OrderLine(orderId=order1, sku=sku, qty=12)
-    line2 = model.OrderLine(orderId=order2, sku=sku, qty=30)
+    order1, order2 = random_order_id(name="order1"), random_order_id(name="order2")
+    line1 = model.OrderLine(order_id=order1, sku=sku, qty=12)
+    line2 = model.OrderLine(order_id=order2, sku=sku, qty=30)
     exceptions = []
     barrier = threading.Barrier(2)
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -155,17 +155,17 @@ def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory,
 
         allocated_id = allocations[0]
         row = verify_session.execute(
-            text('SELECT "orderId", sku, qty FROM order_lines WHERE id = :id'),
+            text('SELECT "order_id", sku, qty FROM order_lines WHERE id = :id'),
             dict(id=allocated_id),
         ).first()
         assert row is not None
-        allocated_orderid, allocated_sku, allocated_qty = row
+        allocated_order_id, allocated_sku, allocated_qty = row
         assert allocated_sku == sku
-        assert allocated_orderid in (order1, order2)
+        assert allocated_order_id in (order1, order2)
         assert allocated_qty in (12, 30)
 
         candidate_count = verify_session.execute(
-            text('SELECT COUNT(*) FROM order_lines WHERE ("orderId" = :o1 OR "orderId" = :o2) AND sku = :sku'),
+            text('SELECT COUNT(*) FROM order_lines WHERE ("order_id" = :o1 OR "order_id" = :o2) AND sku = :sku'),
             dict(o1=order1, o2=order2, sku=sku),
         ).scalar_one()
         assert candidate_count == 1

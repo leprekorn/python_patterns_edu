@@ -119,10 +119,10 @@ def make_batch_and_line() -> Callable[..., Tuple[Batch, OrderLine]]:
         line_qty: int,
         batch_ref="batch-001",
         batch_eta: Optional[date] = date.today(),
-        orderId="order-123",
+        order_id="order-123",
     ) -> Tuple[Batch, OrderLine]:
         batch = Batch(ref=batch_ref, sku=batch_sku, qty=batch_qty, eta=batch_eta)
-        line = OrderLine(orderId=orderId, sku=line_sku, qty=line_qty)
+        line = OrderLine(order_id=order_id, sku=line_sku, qty=line_qty)
         return batch, line
 
     return _make

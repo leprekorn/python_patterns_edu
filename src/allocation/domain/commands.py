@@ -10,14 +10,14 @@ class Command:
 
 @dataclass
 class Allocate(Command):
-    orderId: str
+    order_id: str
     sku: str
     qty: int
 
 
 @dataclass
 class Deallocate(Command):
-    orderId: str
+    order_id: str
     sku: str
     qty: int
 
