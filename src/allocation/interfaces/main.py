@@ -48,7 +48,7 @@ class IRepository(Protocol):
     def get(self, sku: str) -> Optional[model.Product]:
         raise NotImplementedError
 
-    def get_by_batchref(self, batchref: str) -> Optional[model.Product]:
+    def get_by_batch_ref(self, batch_ref: str) -> Optional[model.Product]:
         raise NotImplementedError
 
     def list(self) -> List[model.Product]:

@@ -26,9 +26,9 @@ def allocations(order_id: str, uow: unit_of_work.SqlAlchemyUnitOfWork):
             exists = uow.session.execute(select(orm.order_lines.c.id).where(orm.order_lines.c.order_id == order_id)).first()
             if not exists:
                 return None
-            return {"sku": None, "batchref": None}
+            return {"sku": None, "batch_ref": None}
 
-        sku, batchref = row
-        if batchref is None:
-            return {"sku": None, "batchref": None}
-        return {"sku": sku, "batchref": batchref}
+        sku, batch_ref = row
+        if batch_ref is None:
+            return {"sku": None, "batch_ref": None}
+        return {"sku": sku, "batch_ref": batch_ref}

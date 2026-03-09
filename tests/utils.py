@@ -9,7 +9,7 @@ def random_sku(name="") -> str:
     return f"sku-{name}-{random_suffix()}"
 
 
-def random_batchref(name="") -> str:
+def random_batch_ref(name="") -> str:
     return f"batch-{name}-{random_suffix()}"
 
 

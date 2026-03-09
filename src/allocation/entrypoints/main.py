@@ -23,7 +23,7 @@ def allocate(payload: AllocateRequest):
         command = commands.Allocate(order_id=order_id, sku=sku, qty=qty)
         result = messageBus.handle(message=command)
         batch_ref = result[0] if result else None
-        return {"batchref": batch_ref}
+        return {"batch_ref": batch_ref}
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     except exceptions.UnallocatedLine as e:
@@ -36,7 +36,7 @@ def deallocate(payload: DeallocateRequest):
         command = commands.Deallocate(order_id=payload.order_id, sku=payload.sku, qty=payload.qty)
         result = messageBus.handle(message=command)
         batch_ref = result[0] if result else None
-        return {"batchref": batch_ref}
+        return {"batch_ref": batch_ref}
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     except exceptions.UnallocatedLine as e:
@@ -53,10 +53,10 @@ def add_batch(payload: AddBatchRequest):
     messageBus.handle(message=command)
 
 
-@app.delete("/batches/{batchref}", status_code=204)
-def delete_batch(sku: str, batchref: str):
+@app.delete("/batches/{batch_ref}", status_code=204)
+def delete_batch(sku: str, batch_ref: str):
     try:
-        command = commands.DeleteBatch(ref=batchref, sku=sku)
+        command = commands.DeleteBatch(ref=batch_ref, sku=sku)
         messageBus.handle(message=command)
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -64,10 +64,10 @@ def delete_batch(sku: str, batchref: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
-@app.get("/batches/{batchref}")
-def get_batches(sku: str, batchref: str):
+@app.get("/batches/{batch_ref}")
+def get_batches(sku: str, batch_ref: str):
     try:
-        batch_data = handlers.get_batch(sku=sku, reference=batchref, uow=uow)
+        batch_data = handlers.get_batch(sku=sku, reference=batch_ref, uow=uow)
         return batch_data
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))

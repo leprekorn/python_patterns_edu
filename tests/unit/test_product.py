@@ -155,6 +155,6 @@ def test_allocation_create_allocated_event(make_batch_and_line):
     )
     product = Product(sku="Orange-chair", batches=[batch])
     product.allocate(line=line)
-    allocated_event = events.Allocated(order_id=line.order_id, sku=line.sku, qty=line.qty, batchref=batch.reference)
+    allocated_event = events.Allocated(order_id=line.order_id, sku=line.sku, qty=line.qty, batch_ref=batch.reference)
     assert allocated_event in product.events
     assert product.events[-1] == allocated_event

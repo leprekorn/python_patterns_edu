@@ -1,7 +1,7 @@
 import pytest
 
 from allocation import config
-from tests.utils import random_batchref, random_order_id, random_sku
+from tests.utils import random_batch_ref, random_order_id, random_sku
 
 url = config.get_api_url()
 
@@ -11,21 +11,21 @@ url = config.get_api_url()
 @pytest.mark.usefixtures("restart_api")
 def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
     earlybatch = {
-        "reference": random_batchref(name="early"),
+        "reference": random_batch_ref(name="early"),
         "sku": random_sku(name="RETRO-CLOCK"),
         "qty": 100,
         "eta": "2026-02-02",
     }
 
     laterbatch = {
-        "reference": random_batchref(name="later"),
+        "reference": random_batch_ref(name="later"),
         "sku": earlybatch["sku"],
         "qty": 100,
         "eta": "2026-02-03",
     }
 
     otherbatch = {
-        "reference": random_batchref(name="other"),
+        "reference": random_batch_ref(name="other"),
         "sku": random_sku(name="ANOTHER-ITEM"),
         "qty": 100,
         "eta": None,
@@ -53,7 +53,7 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
 
     allocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['order_id']}")
     assert allocation.status_code == 200
-    assert allocation.json() == {"sku": earlybatch["sku"], "batchref": earlybatch["reference"]}, (
+    assert allocation.json() == {"sku": earlybatch["sku"], "batch_ref": earlybatch["reference"]}, (
         f"expected allocation to be {earlybatch['reference']} for sku {earlybatch['sku']}, but got {allocation.json()}"
     )
 
@@ -63,8 +63,8 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
 
     deallocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['order_id']}")
     assert deallocation.status_code == 200
-    assert deallocation.json() == {"sku": None, "batchref": None}, (
-        f"expected deallocation to have no batchref and no sku, but got {deallocation.json()}"
+    assert deallocation.json() == {"sku": None, "batch_ref": None}, (
+        f"expected deallocation to have no batch_ref and no sku, but got {deallocation.json()}"
     )
 
     for batch in (earlybatch, laterbatch, otherbatch):
@@ -76,9 +76,9 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
 @pytest.mark.api
 @pytest.mark.usefixtures("restart_api")
 def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
-    batchref = random_batchref(name="absent-get-test")
+    batch_ref = random_batch_ref(name="absent-get-test")
     sku = random_sku(name="absent-sku")
-    r = fastapi_test_client.get(f"{url}/batches/{batchref}?sku={sku}")
+    r = fastapi_test_client.get(f"{url}/batches/{batch_ref}?sku={sku}")
     assert r.status_code == 400
     assert r.json()["detail"] == f"Invalid sku {sku}"
 
@@ -89,7 +89,7 @@ def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
     assert deallocate_from_abcent_product_request.status_code == 400
 
     post_data = {
-        "reference": batchref,
+        "reference": batch_ref,
         "sku": sku,
         "qty": 100,
         "eta": "2026-01-21",
@@ -106,7 +106,7 @@ def test_unhappy_path_get_batch_deallocate_from_batch(fastapi_test_client):
     allocation = fastapi_test_client.get(f"{url}/allocations/{order_id}")
     assert allocation.status_code == 400
 
-    delete_batch_request = fastapi_test_client.delete(f"{url}/batches/{batchref}?sku={sku}")
+    delete_batch_request = fastapi_test_client.delete(f"{url}/batches/{batch_ref}?sku={sku}")
     assert delete_batch_request.status_code == 204
 
 

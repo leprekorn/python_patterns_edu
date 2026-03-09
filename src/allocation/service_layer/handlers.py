@@ -75,7 +75,7 @@ def delete_batch(command: commands.DeleteBatch, uow: IUnitOfWork) -> None:
 
 def change_batch_quantity(command: commands.ChangeBatchQuantity, uow: IUnitOfWork):
     with uow:
-        product = uow.products.get_by_batchref(batchref=command.ref)
+        product = uow.products.get_by_batch_ref(batch_ref=command.ref)
         if not product:
             raise InvalidSku(f"Invalid sku for batch reference {command.ref}")
         product.change_batch_quantity(reference=command.ref, qty=command.qty)

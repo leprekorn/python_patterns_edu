@@ -5,7 +5,7 @@ from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy import text
 import pytest
-from tests.utils import random_order_id, random_batchref, random_sku
+from tests.utils import random_order_id, random_batch_ref, random_sku
 from typing import List
 from concurrent.futures import ThreadPoolExecutor
 
@@ -15,11 +15,11 @@ from concurrent.futures import ThreadPoolExecutor
 def test_uow_can_get_batch_and_allocate_to_it(session_factory, insert_batch_via_session):
     sku = "HIPSTER-WORKBENCH"
     order_id = "order1"
-    batchRef = "batch1"
+    batch_ref = "batch1"
     session = session_factory()
     insert_batch_via_session(
         session=session,
-        ref=batchRef,
+        ref=batch_ref,
         sku=sku,
         qty=100,
         eta=None,
@@ -44,7 +44,7 @@ def test_uow_can_get_batch_and_allocate_to_it(session_factory, insert_batch_via_
         dict(orderline_id=orderLine_id),
     ).scalar_one()
 
-    assert allocated_batch_ref == batchRef
+    assert allocated_batch_ref == batch_ref
 
 
 @pytest.mark.integration
@@ -106,12 +106,12 @@ def __try_to_allocate(sku: str, line: model.OrderLine, exceptions: List[Exceptio
 @pytest.mark.uow
 def test_concurrent_updates_to_version_are_not_allowed(postgres_session_factory, insert_batch_via_session):
     sku = random_sku(name="CONCURRENT-TEST-SOFA")
-    batchref = random_batchref(name="BATCH-001")
+    batch_ref = random_batch_ref(name="BATCH-001")
     session = postgres_session_factory()
 
     batch1_id = insert_batch_via_session(
         session=session,
-        ref=batchref,
+        ref=batch_ref,
         sku=sku,
         qty=100,
         eta=None,

@@ -102,7 +102,7 @@ def test_repository_can_list_batches(orm_session):
 
 @pytest.mark.integration
 @pytest.mark.repository
-def test_repository_get_by_batchref(orm_session, insert_batch_via_session):
+def test_repository_get_by_batch_ref(orm_session, insert_batch_via_session):
     batch1 = Batch(ref="batch1", sku="GENERIC-SOFA", qty=100, eta=None)
     batch1_id = insert_batch_via_session(
         session=orm_session,
@@ -112,7 +112,7 @@ def test_repository_get_by_batchref(orm_session, insert_batch_via_session):
         eta=batch1.eta,
     )
     repo = SQLAlchemyRepository(orm_session)
-    retrieved_product = repo.get_by_batchref(batchref=batch1.reference)
+    retrieved_product = repo.get_by_batch_ref(batch_ref=batch1.reference)
     assert retrieved_product is not None
     retrieved_batch = retrieved_product.get_batch(reference=batch1.reference)
     assert retrieved_batch is not None
