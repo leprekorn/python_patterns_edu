@@ -20,6 +20,12 @@ def test_allocations_view(make_real_uow_and_messagebus):
     messagebus.handle(message=commands.Allocate(order_id="otherorder", sku="sku1", qty=30))
     messagebus.handle(message=commands.Allocate(order_id="otherorder", sku="sku2", qty=10))
 
-    assert views.allocations(order_id="order1", uow=uow) == {"sku": "sku1", "batch_ref": "sku1batch"}
-    assert views.allocations(order_id="otherorder", uow=uow) == {"sku": "sku1", "batch_ref": "sku1batch-later"}
-    assert views.allocations(order_id="nonexistentorder", uow=uow) is None
+    assert views.allocations(order_id="order1", uow=uow) == [
+        {"sku": "sku1", "batch_ref": "sku1batch"},
+        {"sku": "sku2", "batch_ref": "sku2batch"},
+    ]
+    assert views.allocations(order_id="otherorder", uow=uow) == [
+        {"sku": "sku1", "batch_ref": "sku1batch-later"},
+        {"sku": "sku2", "batch_ref": "sku2batch"},
+    ]
+    assert views.allocations(order_id="nonexistentorder", uow=uow) == []

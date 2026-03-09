@@ -50,7 +50,11 @@ def add_batch(payload: AddBatchRequest):
     qty = payload.qty
     eta = None if payload.eta is None else datetime.fromisoformat(payload.eta).date()
     command = commands.CreateBatch(ref=reference, sku=sku, qty=qty, eta=eta)
-    messageBus.handle(message=command)
+    try:
+        messageBus.handle(message=command)
+        return {"reference": reference, "sku": sku}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.delete("/batches/{batch_ref}", status_code=204)
@@ -78,6 +82,6 @@ def get_batches(sku: str, batch_ref: str):
 @app.get("/allocations/{order_id}")
 def get_allocations(order_id: str):
     result = views.allocations(order_id=order_id, uow=uow)
-    if result is None:
+    if result in (None, []):
         raise HTTPException(status_code=400, detail=f"Order line {order_id} not found")
     return result

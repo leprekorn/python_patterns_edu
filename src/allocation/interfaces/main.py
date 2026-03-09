@@ -61,8 +61,10 @@ class IRepository(Protocol):
 class IUnitOfWork(Protocol):
     session_factory: ICallableSession
     products: IRepository
+    session: ISession
 
     def __enter__(self) -> "IUnitOfWork":
+        self.session = self.session_factory()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

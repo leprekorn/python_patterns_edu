@@ -20,10 +20,11 @@ from allocation.service_layer.messagebus import MessageBus
 from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
 
 TRUNCATE_QUERIES = (
-    "truncate table products CASCADE;",
-    "truncate table allocations CASCADE;",
-    "truncate table batches CASCADE;",
-    "truncate table order_lines CASCADE;",
+    "DELETE FROM allocations_view;",
+    "TRUNCATE TABLE allocations CASCADE;",
+    "TRUNCATE TABLE order_lines CASCADE;",
+    "TRUNCATE TABLE batches CASCADE;",
+    "TRUNCATE TABLE products CASCADE;",
 )
 
 

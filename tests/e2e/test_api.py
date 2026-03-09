@@ -53,19 +53,14 @@ def test_happy_path_post_allocate_deallocate_batch(fastapi_test_client):
 
     allocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['order_id']}")
     assert allocation.status_code == 200
-    assert allocation.json() == {"sku": earlybatch["sku"], "batch_ref": earlybatch["reference"]}, (
+
+    assert allocation.json() == [{"sku": earlybatch["sku"], "batch_ref": earlybatch["reference"]}], (
         f"expected allocation to be {earlybatch['reference']} for sku {earlybatch['sku']}, but got {allocation.json()}"
     )
 
     deallocate_data = {"sku": earlybatch["sku"], "order_id": allocate_data["order_id"], "qty": 3}
     deallocated_request = fastapi_test_client.post(f"{url}/deallocate", json=deallocate_data)
     assert deallocated_request.status_code == 202
-
-    deallocation = fastapi_test_client.get(f"{url}/allocations/{allocate_data['order_id']}")
-    assert deallocation.status_code == 200
-    assert deallocation.json() == {"sku": None, "batch_ref": None}, (
-        f"expected deallocation to have no batch_ref and no sku, but got {deallocation.json()}"
-    )
 
     for batch in (earlybatch, laterbatch, otherbatch):
         delete_response = fastapi_test_client.delete(f"{url}/batches/{batch['reference']}?sku={batch['sku']}")

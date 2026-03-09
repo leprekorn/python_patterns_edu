@@ -30,3 +30,9 @@ docker run --rm  leprekorn/allocation:0.0.1 python -c "from allocation.entrypoin
 alembic revision --autogenerate -m "Added field version to Product"
 alembic upgrade head
 ```
+
+# Troubleshooting
+### Clean postgres locks
+```
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid();
+```
