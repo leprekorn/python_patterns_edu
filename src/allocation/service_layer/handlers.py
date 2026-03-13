@@ -49,6 +49,15 @@ def deallocate(command: commands.Deallocate, uow: IUnitOfWork) -> None:
         uow.commit()
 
 
+def reallocate(event: events.Deallocated, uow: IUnitOfWork) -> None:
+    with uow:
+        product = uow.products.get(sku=event.sku)
+        if not product:
+            raise InvalidSku(f"Invalid sku {event.sku}")
+        product.events.append(commands.Allocate(order_id=event.order_id, sku=event.sku, qty=event.qty))
+        uow.commit()
+
+
 def add_batch(
     command: commands.CreateBatch,
     uow: IUnitOfWork,
@@ -124,4 +133,27 @@ def add_allocation_to_read_model(
             logger.info(f"Allocation written to read model: {event.order_id}")
     except Exception as e:
         logger.error(f"Failed to write allocation to read model: {e}", exc_info=True)
+        raise
+
+
+def remove_allocation_from_read_model(
+    event: events.Deallocated,
+    uow: IUnitOfWork,
+):
+    logger.info(f"remove_allocation_from_read_model called with event: {event}")
+    try:
+        with uow:
+            uow.session.execute(
+                text(
+                    """
+                DELETE FROM allocations_view
+                WHERE order_id = :order_id AND sku = :sku
+                """
+                ),
+                dict(order_id=event.order_id, sku=event.sku),
+            )
+            uow.commit()
+            logger.info(f"Allocation removed from read model: {event.order_id}")
+    except Exception as e:
+        logger.error(f"Failed to remove allocation from read model: {e}", exc_info=True)
         raise

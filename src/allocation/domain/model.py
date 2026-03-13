@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, List, Optional, Set
 
-from allocation.domain import commands, events, exceptions
+from allocation.domain import events, exceptions
 from allocation.interfaces.main import IMessage
 
 
@@ -121,7 +121,7 @@ class Product:
         batch._purchase_quantity = qty
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
-            self.events.append(commands.Allocate(order_id=line.order_id, sku=line.sku, qty=line.qty))
+            self.events.append(events.Deallocated(order_id=line.order_id, sku=line.sku, qty=line.qty))
 
     def delete_batch(self, reference: str) -> None:
         batch = self.get_batch(reference=reference)
