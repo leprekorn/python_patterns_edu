@@ -87,6 +87,18 @@ files = [
 ]
 
 [[package]]
+name = "circular-import-detector"
+version = "1.0.18"
+description = "A tool to detect circular imports in Python projects"
+optional = false
+python-versions = ">=3.7"
+groups = ["linters"]
+files = [
+    {file = "circular_import_detector-1.0.18-py3-none-any.whl", hash = "sha256:b25c64e493a2808d380150bb1fd8e2e5771a9baea3cb3cb61eabda37e06dca7a"},
+    {file = "circular_import_detector-1.0.18.tar.gz", hash = "sha256:b6ecbcd378799d31ee9edc0f5356ea97d751e19e7fdead6c13cfd4b145a6c299"},
+]
+
+[[package]]
 name = "click"
 version = "8.3.1"
 description = "Composable command line interface toolkit"
@@ -1444,4 +1456,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.14"
-content-hash = "d0656e2bb9e556d934c42c4a330449086fd1d26a529121d1840561d3c9d5a6b0"
+content-hash = "aac764341464e92959904f135c8e8d43403a2f96b4539ed1e6e7c26e01c79a9e"
