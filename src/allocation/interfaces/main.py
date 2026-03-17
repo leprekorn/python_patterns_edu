@@ -89,3 +89,6 @@ class IRedisAdapter(Protocol):
 
     def subscribe(self, channel: str):
         raise NotImplementedError
+
+    def wait_until_ready(self, timeout: int = 10):
+        raise NotImplementedError
