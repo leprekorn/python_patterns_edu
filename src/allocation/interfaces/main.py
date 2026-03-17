@@ -89,3 +89,12 @@ class IRedisAdapter(Protocol):
 
     def subscribe(self, channel: str):
         raise NotImplementedError
+
+    def wait_until_ready(self, timeout: int = 10):
+        raise NotImplementedError
+
+    def get_read_model(self, order_id: str) -> dict:
+        raise NotImplementedError
+
+    def update_read_model(self, order_id: str, sku: str, batch_ref: str):
+        raise NotImplementedError
