@@ -81,7 +81,7 @@ def get_batches(sku: str, batch_ref: str):
 
 @app.get("/allocations/{order_id}")
 def get_allocations(order_id: str):
-    result = views.allocations(order_id=order_id, uow=uow)
+    result = views.allocations(order_id=order_id)
     if result in (None, []):
         raise HTTPException(status_code=400, detail=f"Order line {order_id} not found")
     return result

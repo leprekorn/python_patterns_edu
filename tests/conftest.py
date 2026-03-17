@@ -109,6 +109,9 @@ def make_redis_client():
     redis = RedisAdapter(host=str(redis_url["host"]), port=int(redis_url["port"]))
     redis.wait_until_ready(timeout=10)
     yield redis
+    redis.redis.flushdb()
+    redis.redis.flushall()
+    redis.redis.close()
 
 
 @pytest.fixture(scope="function")

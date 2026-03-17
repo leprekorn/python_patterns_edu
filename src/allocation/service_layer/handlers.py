@@ -1,8 +1,6 @@
 import logging
 from dataclasses import asdict
 
-from sqlalchemy import text
-
 from allocation import config
 from allocation.adapters import email, redis
 from allocation.domain import commands, events, model
@@ -113,47 +111,13 @@ def publish_allocated_event(event: events.Allocated, uow: IUnitOfWork) -> None:
     redisAdapter.publish(channel="line_allocated", message=asdict(event))
 
 
-def add_allocation_to_read_model(
-    event: events.Allocated,
-    uow: IUnitOfWork,
-):
-    logger.info(f"add_allocation_to_read_model called with event: {event}")
-    try:
-        with uow:
-            uow.session.execute(
-                text(
-                    """
-                INSERT INTO allocations_view (order_id, sku, batch_ref)
-                VALUES (:order_id, :sku, :batch_ref)
-                """
-                ),
-                dict(order_id=event.order_id, sku=event.sku, batch_ref=event.batch_ref),
-            )
-            uow.commit()
-            logger.info(f"Allocation written to read model: {event.order_id}")
-    except Exception as e:
-        logger.error(f"Failed to write allocation to read model: {e}", exc_info=True)
-        raise
+def add_allocation_to_read_model(event: events.Allocated, uow: IUnitOfWork) -> None:
+    redis_config = config.get_redis_url()
+    redisAdapter = redis.RedisAdapter(host=str(redis_config["host"]), port=int(redis_config["port"]))
+    redisAdapter.update_read_model(order_id=event.order_id, sku=event.sku, batch_ref=event.batch_ref)
 
 
-def remove_allocation_from_read_model(
-    event: events.Deallocated,
-    uow: IUnitOfWork,
-):
-    logger.info(f"remove_allocation_from_read_model called with event: {event}")
-    try:
-        with uow:
-            uow.session.execute(
-                text(
-                    """
-                DELETE FROM allocations_view
-                WHERE order_id = :order_id AND sku = :sku
-                """
-                ),
-                dict(order_id=event.order_id, sku=event.sku),
-            )
-            uow.commit()
-            logger.info(f"Allocation removed from read model: {event.order_id}")
-    except Exception as e:
-        logger.error(f"Failed to remove allocation from read model: {e}", exc_info=True)
-        raise
+def remove_allocation_from_read_model(event: events.Deallocated, uow: IUnitOfWork) -> None:
+    redis_config = config.get_redis_url()
+    redisAdapter = redis.RedisAdapter(host=str(redis_config["host"]), port=int(redis_config["port"]))
+    redisAdapter.update_read_model(order_id=event.order_id, sku=event.sku, batch_ref="")

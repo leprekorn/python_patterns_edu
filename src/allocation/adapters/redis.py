@@ -1,5 +1,6 @@
 import json
 import time
+from typing import Any, Dict
 
 import redis
 from redis.exceptions import ConnectionError
@@ -36,3 +37,10 @@ class RedisAdapter(IRedisAdapter):
         assert confirmation is not None, f"Failed to subscribe to channel {channel}"
         assert confirmation["type"] == "subscribe" and confirmation["channel"] == channel
         return pubsub
+
+    def get_read_model(self, order_id: str) -> Dict[Any, Any]:
+        data = self.redis.hgetall(order_id)
+        return data  # type: ignore
+
+    def update_read_model(self, order_id: str, sku: str, batch_ref: str):
+        self.redis.hset(order_id, sku, batch_ref)
