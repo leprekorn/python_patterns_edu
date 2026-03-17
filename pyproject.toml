@@ -57,6 +57,7 @@ markers = [
     "service: test for service layer",
     "uow: tests for Unit of Work",
     "external_events: tests for external events (Redis)",
+    "views: tests for db views",
 ]
 
 addopts = [

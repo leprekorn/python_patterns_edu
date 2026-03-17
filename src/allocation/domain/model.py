@@ -2,18 +2,18 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any, List, Optional, Set
 
-from allocation.domain import commands, events, exceptions
+from allocation.domain import events, exceptions
 from allocation.interfaces.main import IMessage
 
 
 @dataclass(eq=True)
 class OrderLine:
-    orderId: str
+    order_id: str
     sku: str
     qty: int
 
     def __hash__(self):
-        return hash((self.orderId, self.sku))
+        return hash((self.order_id, self.sku))
 
 
 class Batch:
@@ -73,9 +73,9 @@ class Batch:
     def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
 
-    def allocated_line(self, orderId: str) -> Optional[OrderLine]:
+    def allocated_line(self, order_id: str) -> Optional[OrderLine]:
         for line in self._allocations:
-            if line.orderId == orderId:
+            if line.order_id == order_id:
                 return line
         return None
 
@@ -92,7 +92,7 @@ class Product:
             batch = next(b for b in sorted(self.batches) if b.can_allocate(line))
             batch.allocate(line)
             self.version_number += 1
-            self.events.append(events.Allocated(orderid=line.orderId, sku=line.sku, qty=line.qty, batchref=batch.reference))
+            self.events.append(events.Allocated(order_id=line.order_id, sku=line.sku, qty=line.qty, batch_ref=batch.reference))
         except StopIteration:
             self.events.append(events.OutOfStock(sku=line.sku))
             return None
@@ -100,11 +100,11 @@ class Product:
 
     def deallocate(self, line: OrderLine) -> str:
         try:
-            batch = next(b for b in self.batches if b.allocated_line(line.orderId))
+            batch = next(b for b in self.batches if b.allocated_line(line.order_id))
             batch.deallocate(line)
             return batch.reference
         except StopIteration:
-            raise exceptions.UnallocatedLine(f"Order line {line.orderId} is not allocated to any batch in Product {self.sku}")
+            raise exceptions.UnallocatedLine(f"Order line {line.order_id} is not allocated to any batch in Product {self.sku}")
 
     @property
     def batches_list(self) -> List[Batch]:
@@ -121,7 +121,7 @@ class Product:
         batch._purchase_quantity = qty
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
-            self.events.append(commands.Allocate(orderId=line.orderId, sku=line.sku, qty=line.qty))
+            self.events.append(events.Deallocated(order_id=line.order_id, sku=line.sku, qty=line.qty))
 
     def delete_batch(self, reference: str) -> None:
         batch = self.get_batch(reference=reference)

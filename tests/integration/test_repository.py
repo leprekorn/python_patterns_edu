@@ -4,14 +4,14 @@ from allocation.domain.model import Batch, OrderLine, Product
 from allocation.adapters.repository import SQLAlchemyRepository
 
 
-def insert_order_line(orm_session, orderid, sku, qty) -> int:
+def insert_order_line(orm_session, order_id, sku, qty) -> int:
     orm_session.execute(
-        statement=text("INSERT INTO order_lines (orderId, sku, qty) VALUES (:orderid, :sku, :qty)"),
-        params=dict(orderid=orderid, sku=sku, qty=qty),
+        statement=text("INSERT INTO order_lines (order_id, sku, qty) VALUES (:order_id, :sku, :qty)"),
+        params=dict(order_id=order_id, sku=sku, qty=qty),
     )
     [[orderline_id]] = orm_session.execute(
-        text("SELECT id FROM order_lines WHERE orderId=:orderid AND sku=:sku"),
-        dict(orderid="order1", sku="GENERIC-SOFA"),
+        text("SELECT id FROM order_lines WHERE order_id=:order_id AND sku=:sku"),
+        dict(order_id="order1", sku="GENERIC-SOFA"),
     )
     return orderline_id
 
@@ -64,8 +64,8 @@ def test_repository_can_retrieve_a_batch_with_allocations(orm_session, insert_ba
         qty=batch1._purchase_quantity,
         eta=batch1.eta,
     )
-    orderline = OrderLine(orderId="order1", sku=batch1.sku, qty=12)
-    orderline_id = insert_order_line(orm_session, sku=orderline.sku, qty=orderline.qty, orderid=orderline.orderId)
+    orderline = OrderLine(order_id="order1", sku=batch1.sku, qty=12)
+    orderline_id = insert_order_line(orm_session, sku=orderline.sku, qty=orderline.qty, order_id=orderline.order_id)
     insert_allocation(orm_session, orderline_id=orderline_id, batch_id=batch1_id)
     repo = SQLAlchemyRepository(orm_session)
     retrieved_product = repo.get(sku=batch1.sku)
@@ -102,7 +102,7 @@ def test_repository_can_list_batches(orm_session):
 
 @pytest.mark.integration
 @pytest.mark.repository
-def test_repository_get_by_batchref(orm_session, insert_batch_via_session):
+def test_repository_get_by_batch_ref(orm_session, insert_batch_via_session):
     batch1 = Batch(ref="batch1", sku="GENERIC-SOFA", qty=100, eta=None)
     batch1_id = insert_batch_via_session(
         session=orm_session,
@@ -112,7 +112,7 @@ def test_repository_get_by_batchref(orm_session, insert_batch_via_session):
         eta=batch1.eta,
     )
     repo = SQLAlchemyRepository(orm_session)
-    retrieved_product = repo.get_by_batchref(batchref=batch1.reference)
+    retrieved_product = repo.get_by_batch_ref(batch_ref=batch1.reference)
     assert retrieved_product is not None
     retrieved_batch = retrieved_product.get_batch(reference=batch1.reference)
     assert retrieved_batch is not None

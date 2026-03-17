@@ -48,7 +48,7 @@ class IRepository(Protocol):
     def get(self, sku: str) -> Optional[model.Product]:
         raise NotImplementedError
 
-    def get_by_batchref(self, batchref: str) -> Optional[model.Product]:
+    def get_by_batch_ref(self, batch_ref: str) -> Optional[model.Product]:
         raise NotImplementedError
 
     def list(self) -> List[model.Product]:
@@ -61,8 +61,10 @@ class IRepository(Protocol):
 class IUnitOfWork(Protocol):
     session_factory: ICallableSession
     products: IRepository
+    session: ISession
 
     def __enter__(self) -> "IUnitOfWork":
+        self.session = self.session_factory()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

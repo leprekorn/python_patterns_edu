@@ -8,7 +8,7 @@ from allocation.domain.model import Batch, OrderLine
 @pytest.mark.orm
 def test_orderline_mapper_can_load_lines(orm_session):
     insert_query = """
-        INSERT INTO order_lines(orderid, sku, qty) VALUES
+        INSERT INTO order_lines(order_id, sku, qty) VALUES
         ('order1', 'RED-CHAIR', 12),
         ('order2', 'RED-TABLE', 13),
         ('order3', 'BLUE-LIPSTICK', 14)
@@ -28,7 +28,7 @@ def test_orderline_mapper_can_save_lines(orm_session):
     new_line = OrderLine("order1", "DECORATIVE-WIDGET", 12)
     orm_session.add(new_line)
     orm_session.commit()
-    select_query = text('SELECT orderid, sku, qty FROM "order_lines"')
+    select_query = text('SELECT order_id, sku, qty FROM "order_lines"')
     rows = list(orm_session.execute(statement=select_query))
     assert rows == [("order1", "DECORATIVE-WIDGET", 12)]
 
@@ -62,7 +62,7 @@ def test_saving_batches(orm_session):
 @pytest.mark.orm
 def test_saving_allocations(orm_session):
     batch = Batch(ref="batch1", sku="sku1", qty=100, eta=None)
-    line = OrderLine(orderId="order1", sku="sku1", qty=10)
+    line = OrderLine(order_id="order1", sku="sku1", qty=10)
     batch.allocate(line)
     orm_session.add(batch)
     orm_session.commit()
@@ -74,11 +74,11 @@ def test_saving_allocations(orm_session):
 @pytest.mark.orm
 def test_retrieving_allocations(orm_session):
     orm_session.execute(
-        text("INSERT INTO order_lines (orderid, sku, qty) VALUES (:orderid, :sku, :qty)"), dict(orderid="order1", sku="sku1", qty=12)
+        text("INSERT INTO order_lines (order_id, sku, qty) VALUES (:order_id, :sku, :qty)"), dict(order_id="order1", sku="sku1", qty=12)
     )
     olid = orm_session.execute(
-        text("SELECT id FROM order_lines WHERE orderid=:orderid AND sku=:sku"),
-        dict(orderid="order1", sku="sku1"),
+        text("SELECT id FROM order_lines WHERE order_id=:order_id AND sku=:sku"),
+        dict(order_id="order1", sku="sku1"),
     ).scalar_one()
     orm_session.execute(
         text("INSERT INTO batches (reference, sku, _purchase_quantity, eta) VALUES (:ref, :sku, :qty, :eta)"),
@@ -103,7 +103,7 @@ def test_retrieving_allocations(orm_session):
 @pytest.mark.orm
 def test_deallocate(orm_session):
     batch = Batch(ref="batch1", sku="sku1", qty=100, eta=None)
-    line = OrderLine(orderId="order1", sku="sku1", qty=10)
+    line = OrderLine(order_id="order1", sku="sku1", qty=10)
     batch.allocate(line)
     orm_session.add(batch)
     orm_session.commit()

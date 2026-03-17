@@ -19,8 +19,8 @@ class SQLAlchemyRepository(IRepository):
             self.seen.add(product)
         return product
 
-    def get_by_batchref(self, batchref: str) -> Optional[Product]:
-        batch = self.orm_session.query(Batch).filter_by(reference=batchref).first()
+    def get_by_batch_ref(self, batch_ref: str) -> Optional[Product]:
+        batch = self.orm_session.query(Batch).filter_by(reference=batch_ref).first()
         if not batch:
             return None
         product = batch.product

@@ -10,13 +10,15 @@ from allocation.service_layer import handlers
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_batch_allocate_returns_allocation(make_fake_uow_and_messagebus):
-    _, messagebus = make_fake_uow_and_messagebus
+def test_batch_allocate(make_fake_uow_and_messagebus):
+    uow, messagebus = make_fake_uow_and_messagebus
     sku = "COMPLICATED-LAMP"
     batch_ref = "batch1"
     messagebus.handle(message=commands.CreateBatch(ref=batch_ref, sku=sku, qty=100, eta=None))
-    results = messagebus.handle(message=commands.Allocate(orderId="o1", sku=sku, qty=10))
-    assert results[0] == batch_ref
+    messagebus.handle(message=commands.Allocate(order_id="o1", sku=sku, qty=10))
+    batch = uow.products.get(sku=sku).batches_list[0]
+    assert batch.reference == batch_ref
+    assert batch.available_quantity == 90
 
 
 @pytest.mark.unit
@@ -25,11 +27,10 @@ def test_error_for_invalid_sku(make_fake_uow_and_messagebus):
     _, messagebus = make_fake_uow_and_messagebus
     existing_sku = "AREALSKU"
     abcent_sku = "NONEXISTENTSKU"
-    # MessageBus.handle(events.BatchCreated(ref="b1", sku=existing_sku, qty=100, eta=None), uow=uow)
 
     messagebus.handle(message=commands.CreateBatch(ref="b1", sku=existing_sku, qty=100, eta=None))
     with pytest.raises(handlers.InvalidSku, match=f"Invalid sku {abcent_sku}"):
-        messagebus.handle(message=commands.Allocate(orderId="o1", sku=abcent_sku, qty=10))
+        messagebus.handle(message=commands.Allocate(order_id="o1", sku=abcent_sku, qty=10))
 
 
 @pytest.mark.unit
@@ -38,36 +39,35 @@ def test_commits(make_fake_uow_and_messagebus):
     uow, messagebus = make_fake_uow_and_messagebus
     sku = "OMINOUS-MIRROR"
     messagebus.handle(message=commands.CreateBatch(ref="b1", sku=sku, qty=100, eta=None))
-    messagebus.handle(message=commands.Allocate(orderId="o1", sku=sku, qty=10))
+    messagebus.handle(message=commands.Allocate(order_id="o1", sku=sku, qty=10))
     assert uow.committed is True
 
 
 @pytest.mark.unit
 @pytest.mark.service
-def test_deallocate_returns_batch_reference(make_fake_uow_and_messagebus):
+def test_deallocate(make_fake_uow_and_messagebus):
     uow, messagebus = make_fake_uow_and_messagebus
     batch_ref = "b50"
     sku = "CRAZY-CHAIR"
     messagebus.handle(message=commands.CreateBatch(ref=batch_ref, sku=sku, qty=100, eta=None))
-    messagebus.handle(message=commands.Allocate(orderId="o20", sku=sku, qty=10))
+    messagebus.handle(message=commands.Allocate(order_id="o20", sku=sku, qty=10))
     batch = uow.products.get(sku=sku).batches_list[0]
     assert batch.reference == batch_ref
     assert batch.available_quantity == 90
 
-    unallocation_results = messagebus.handle(message=commands.Deallocate(sku=sku, orderId="o20", qty=10))
-    assert unallocation_results[0] == batch.reference
+    messagebus.handle(message=commands.Deallocate(sku=sku, order_id="o20", qty=10))
     assert batch.available_quantity == 100
 
 
 @pytest.mark.unit
 @pytest.mark.service
 def test_deallocate_non_allocated_line_raises_exception(make_fake_uow_and_messagebus):
-    uow, messagebus = make_fake_uow_and_messagebus
-    orderId = "o30"
+    _, messagebus = make_fake_uow_and_messagebus
+    order_id = "o30"
     sku = "FANCY-TABLE"
     messagebus.handle(message=commands.CreateBatch(ref="b70", sku=sku, qty=50, eta=None))
-    with pytest.raises(UnallocatedLine, match=f"Order line {orderId} is not allocated to any batch in Product {sku}"):
-        messagebus.handle(message=commands.Deallocate(sku=sku, qty=50, orderId=orderId))
+    with pytest.raises(UnallocatedLine, match=f"Order line {order_id} is not allocated to any batch in Product {sku}"):
+        messagebus.handle(message=commands.Deallocate(sku=sku, qty=50, order_id=order_id))
 
 
 @pytest.mark.unit
@@ -81,7 +81,7 @@ def test_deallocate_for_absent_batch_raises_exception(make_fake_uow_and_messageb
         _ = handlers.get_batch(sku=abcent_sku, reference=abcent_batch_ref, uow=uow)
     messagebus.handle(message=commands.CreateBatch(ref="b90", sku=abcent_sku, qty=20, eta=None))
     with pytest.raises(UnallocatedLine, match=f"Order line {abcent_order_id} is not allocated to any batch in Product {abcent_sku}"):
-        messagebus.handle(message=commands.Deallocate(sku=abcent_sku, qty=10, orderId=abcent_order_id))
+        messagebus.handle(message=commands.Deallocate(sku=abcent_sku, qty=10, order_id=abcent_order_id))
 
 
 @pytest.mark.unit
@@ -131,7 +131,7 @@ def test_sends_email_on_out_of_stock_error(make_fake_uow_and_messagebus):
     uow, messagebus = make_fake_uow_and_messagebus
     sku = "POPULAR-CURTAINS"
     messagebus.handle(message=commands.CreateBatch(ref="batch1", sku=sku, qty=5, eta=None))
-    allocation_result = messagebus.handle(message=commands.Allocate(orderId="o1", sku=sku, qty=10))
+    allocation_result = messagebus.handle(message=commands.Allocate(order_id="o1", sku=sku, qty=10))
     assert allocation_result[0] is None
     [collected_events] = uow.events_published
     assert isinstance(collected_events, events.OutOfStock)
@@ -164,8 +164,8 @@ def test_reallocates_on_batch_quantity_changed(make_fake_uow_and_messagebus):
     task_list = [
         commands.CreateBatch(ref="batch1", sku="INDIFFERENT-TABLE", qty=50, eta=None),
         commands.CreateBatch(ref="batch2", sku="INDIFFERENT-TABLE", qty=50, eta=date.today()),
-        commands.Allocate(orderId="order1", sku="INDIFFERENT-TABLE", qty=20),
-        commands.Allocate(orderId="order2", sku="INDIFFERENT-TABLE", qty=20),
+        commands.Allocate(order_id="order1", sku="INDIFFERENT-TABLE", qty=20),
+        commands.Allocate(order_id="order2", sku="INDIFFERENT-TABLE", qty=20),
     ]
     for e in task_list:
         messagebus.handle(e)
@@ -181,4 +181,4 @@ def test_reallocates_on_batch_quantity_changed(make_fake_uow_and_messagebus):
     assert batch2.available_quantity == 30
 
     collected_events = list(uow.events_published)
-    assert any(isinstance(e, commands.Allocate) and e.orderId in ["order1", "order2"] for e in collected_events)
+    assert any(isinstance(e, commands.Allocate) and e.order_id in ["order1", "order2"] for e in collected_events)

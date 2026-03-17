@@ -12,7 +12,7 @@ order_lines = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("sku", String(255)),
     Column("qty", Integer, nullable=False),
-    Column("orderId", String(255)),
+    Column("order_id", String(255)),
 )
 
 products = Table(
@@ -38,6 +38,14 @@ allocations = Table(
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("orderline_id", ForeignKey("order_lines.id")),
     Column("batch_id", ForeignKey("batches.id")),
+)
+
+allocations_view = Table(
+    "allocations_view",
+    metadata,
+    Column("order_id", String(255)),
+    Column("sku", String(255)),
+    Column("batch_ref", String(255)),
 )
 
 

@@ -17,12 +17,14 @@ from allocation.domain.model import Batch, OrderLine, Product
 from allocation.entrypoints.main import app
 from allocation.interfaces.main import IMessage, IRepository, ISession, IUnitOfWork
 from allocation.service_layer.messagebus import MessageBus
+from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
 
 TRUNCATE_QUERIES = (
-    "truncate table products CASCADE;",
-    "truncate table allocations CASCADE;",
-    "truncate table batches CASCADE;",
-    "truncate table order_lines CASCADE;",
+    "DELETE FROM allocations_view;",
+    "TRUNCATE TABLE allocations CASCADE;",
+    "TRUNCATE TABLE order_lines CASCADE;",
+    "TRUNCATE TABLE batches CASCADE;",
+    "TRUNCATE TABLE products CASCADE;",
 )
 
 
@@ -71,9 +73,9 @@ class FakeRepository(IRepository):
             self.seen.add(product)
         return product
 
-    def get_by_batchref(self, batchref: str) -> Optional[Product]:
+    def get_by_batch_ref(self, batch_ref: str) -> Optional[Product]:
         for product in self._products:
-            if any(batch.reference == batchref for batch in product.batches):
+            if any(batch.reference == batch_ref for batch in product.batches):
                 self.seen.add(product)
                 return product
         return None
@@ -89,6 +91,14 @@ class FakeRepository(IRepository):
 def make_fake_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tuple[FakeUnitOfWork, MessageBus]:
     session_factory = session_factory
     uow = FakeUnitOfWork(session_factory=session_factory)
+    messagebus = MessageBus(uow=uow)
+    return uow, messagebus
+
+
+@pytest.fixture(scope="function")
+def make_real_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tuple[SqlAlchemyUnitOfWork, MessageBus]:
+    session_factory = session_factory
+    uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
     messagebus = MessageBus(uow=uow)
     return uow, messagebus
 
@@ -110,10 +120,10 @@ def make_batch_and_line() -> Callable[..., Tuple[Batch, OrderLine]]:
         line_qty: int,
         batch_ref="batch-001",
         batch_eta: Optional[date] = date.today(),
-        orderId="order-123",
+        order_id="order-123",
     ) -> Tuple[Batch, OrderLine]:
         batch = Batch(ref=batch_ref, sku=batch_sku, qty=batch_qty, eta=batch_eta)
-        line = OrderLine(orderId=orderId, sku=line_sku, qty=line_qty)
+        line = OrderLine(order_id=order_id, sku=line_sku, qty=line_qty)
         return batch, line
 
     return _make

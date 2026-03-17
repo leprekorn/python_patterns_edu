@@ -3,14 +3,14 @@ from typing import Optional
 
 
 class AllocateRequest(BaseModel):
-    orderid: str
+    order_id: str
     sku: str
     qty: int
 
 
 class DeallocateRequest(BaseModel):
     sku: str
-    orderid: str
+    order_id: str
     qty: int
 
 
