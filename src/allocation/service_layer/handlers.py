@@ -39,6 +39,10 @@ def allocate(command: commands.Allocate, uow: IUnitOfWork) -> None:
         uow.commit()
 
 
+def reallocate(event: events.Deallocated, uow: IUnitOfWork) -> None:
+    allocate(commands.Allocate(order_id=event.order_id, sku=event.sku, qty=event.qty), uow=uow)
+
+
 def deallocate(command: commands.Deallocate, uow: IUnitOfWork) -> None:
     line = model.OrderLine(order_id=command.order_id, sku=command.sku, qty=command.qty)
     with uow:
@@ -46,15 +50,6 @@ def deallocate(command: commands.Deallocate, uow: IUnitOfWork) -> None:
         if not product:
             raise InvalidSku(f"Invalid sku {line.sku}")
         product.deallocate(line=line)
-        uow.commit()
-
-
-def reallocate(event: events.Deallocated, uow: IUnitOfWork) -> None:
-    with uow:
-        product = uow.products.get(sku=event.sku)
-        if not product:
-            raise InvalidSku(f"Invalid sku {event.sku}")
-        product.events.append(commands.Allocate(order_id=event.order_id, sku=event.sku, qty=event.qty))
         uow.commit()
 
 

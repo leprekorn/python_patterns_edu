@@ -181,4 +181,5 @@ def test_reallocates_on_batch_quantity_changed(make_fake_uow_and_messagebus):
     assert batch2.available_quantity == 30
 
     collected_events = list(uow.events_published)
-    assert any(isinstance(e, commands.Allocate) and e.order_id in ["order1", "order2"] for e in collected_events)
+    assert all(isinstance(e, events.Event) for e in collected_events)
+    assert all(not isinstance(e, commands.Command) for e in collected_events)
