@@ -26,8 +26,15 @@ class MessageBus:
         commands.Deallocate: handlers.deallocate,
     }
 
-    def __init__(self, uow: IUnitOfWork):
+    def __init__(
+        self,
+        uow: IUnitOfWork,
+        event_handlers: Dict[Type[events.Event], List[Callable]] = {},
+        command_handlers: Dict[Type[commands.Command], Callable] = {},
+    ):
         self.uow = uow
+        self.event_handlers = event_handlers if event_handlers else self.EVENT_HANDLERS
+        self.command_handlers = command_handlers if command_handlers else self.COMMAND_HANDLERS
 
     def handle(self, message: IMessage) -> List[str]:
         results = []
