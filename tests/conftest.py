@@ -18,6 +18,7 @@ from allocation.entrypoints.main import app
 from allocation.interfaces.main import IMessage, IRepository, ISession, IUnitOfWork
 from allocation.service_layer.messagebus import MessageBus
 from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
+from allocation.bootstrap import Bootstrap
 
 TRUNCATE_QUERIES = (
     "DELETE FROM allocations_view;",
@@ -88,11 +89,12 @@ class FakeRepository(IRepository):
 
 
 @pytest.fixture(scope="function")
-def make_fake_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tuple[FakeUnitOfWork, MessageBus]:
+def make_fake_uow_and_messagebus(session_factory: Callable[[], ISession]) -> MessageBus:
     session_factory = session_factory
     uow = FakeUnitOfWork(session_factory=session_factory)
-    messagebus = MessageBus(uow=uow)
-    return uow, messagebus
+    bootstrap = Bootstrap(start_orm=False, uow=uow)
+    message_bus = bootstrap.inject_dependencies()
+    return message_bus
 
 
 @pytest.fixture(scope="function")
