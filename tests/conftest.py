@@ -6,19 +6,19 @@ from typing import Callable, Generator, List, Optional, Tuple
 import httpx
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import clear_mappers, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from allocation import config
 from allocation.adapters.orm import metadata, start_mappers
 from allocation.adapters.redis import RedisAdapter
+from allocation.bootstrap import Bootstrap
 from allocation.domain.model import Batch, OrderLine, Product
 from allocation.entrypoints.main import app
 from allocation.interfaces.main import IMessage, IRepository, ISession, IUnitOfWork
 from allocation.service_layer.messagebus import MessageBus
 from allocation.service_layer.unit_of_work import SqlAlchemyUnitOfWork
-from allocation.bootstrap import Bootstrap
 
 TRUNCATE_QUERIES = (
     "DELETE FROM allocations_view;",
@@ -98,11 +98,12 @@ def make_fake_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Mes
 
 
 @pytest.fixture(scope="function")
-def make_real_uow_and_messagebus(session_factory: Callable[[], ISession]) -> Tuple[SqlAlchemyUnitOfWork, MessageBus]:
+def make_real_uow_and_messagebus(session_factory: Callable[[], ISession]) -> MessageBus:
     session_factory = session_factory
     uow = SqlAlchemyUnitOfWork(session_factory=session_factory)
-    messagebus = MessageBus(uow=uow)
-    return uow, messagebus
+    bootstrap = Bootstrap(start_orm=False, uow=uow)
+    message_bus = bootstrap.inject_dependencies()
+    return message_bus
 
 
 @pytest.fixture(scope="function")
@@ -172,7 +173,7 @@ def in_memory_db():
 
 
 @pytest.fixture(scope="function")
-def orm_session(in_memory_db):
+def orm_session(in_memory_db: Engine):
     clear_mappers()
     start_mappers()
     orm_session = sessionmaker(bind=in_memory_db)()
@@ -182,7 +183,7 @@ def orm_session(in_memory_db):
 
 
 @pytest.fixture(scope="function")
-def session_factory(in_memory_db) -> Generator[Callable[[], ISession], None, None]:
+def session_factory(in_memory_db: Engine) -> Generator[Callable[[], ISession], None, None]:
     clear_mappers()
     start_mappers()
     callable_session = sessionmaker(bind=in_memory_db)
