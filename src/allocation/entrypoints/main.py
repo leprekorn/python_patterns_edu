@@ -3,15 +3,15 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException
 
 from allocation import views
-from allocation.adapters import orm
+from allocation.bootstrap import Bootstrap
 from allocation.domain import commands, exceptions
 from allocation.entrypoints.schemas import AddBatchRequest, AllocateRequest, DeallocateRequest
-from allocation.service_layer import handlers, messagebus, unit_of_work
+from allocation.service_layer import handlers, unit_of_work
 
-orm.start_mappers()
 app = FastAPI()
 uow = unit_of_work.SqlAlchemyUnitOfWork()
-messageBus = messagebus.MessageBus(uow=uow)
+bootstrap = Bootstrap(start_orm=True, uow=uow)
+message_bus = bootstrap.inject_dependencies()
 
 
 @app.post("/allocate", status_code=202)
@@ -21,7 +21,7 @@ def allocate(payload: AllocateRequest):
     qty = payload.qty
     try:
         command = commands.Allocate(order_id=order_id, sku=sku, qty=qty)
-        result = messageBus.handle(message=command)
+        result = message_bus.handle(message=command)
         batch_ref = result[0] if result else None
         return {"batch_ref": batch_ref}
     except exceptions.InvalidSku as e:
@@ -34,7 +34,7 @@ def allocate(payload: AllocateRequest):
 def deallocate(payload: DeallocateRequest):
     try:
         command = commands.Deallocate(order_id=payload.order_id, sku=payload.sku, qty=payload.qty)
-        result = messageBus.handle(message=command)
+        result = message_bus.handle(message=command)
         batch_ref = result[0] if result else None
         return {"batch_ref": batch_ref}
     except exceptions.InvalidSku as e:
@@ -51,7 +51,7 @@ def add_batch(payload: AddBatchRequest):
     eta = None if payload.eta is None else datetime.fromisoformat(payload.eta).date()
     command = commands.CreateBatch(ref=reference, sku=sku, qty=qty, eta=eta)
     try:
-        messageBus.handle(message=command)
+        message_bus.handle(message=command)
         return {"reference": reference, "sku": sku}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -61,7 +61,7 @@ def add_batch(payload: AddBatchRequest):
 def delete_batch(sku: str, batch_ref: str):
     try:
         command = commands.DeleteBatch(ref=batch_ref, sku=sku)
-        messageBus.handle(message=command)
+        message_bus.handle(message=command)
     except exceptions.InvalidSku as e:
         raise HTTPException(status_code=400, detail=str(e))
     except exceptions.InvalidBatchReference as e:
